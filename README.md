@@ -1,0 +1,1 @@
+# AI-Based-Soil-Assessment-using-Multimodeldata
