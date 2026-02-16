@@ -6,6 +6,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import ChatBot from '../components/ChatBot';
 
 // Fix Leaflet default icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -747,6 +748,9 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
+
+            {/* CHATBOT WIDGET */}
+            <ChatBot />
         </div>
     );
 }
