@@ -1,0 +1,53 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+
+// Pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Contact from './pages/Contact';
+
+// Styles
+import './index.css';
+import './styles/home.css';
+import './styles/dashboard.css';
+import './styles/auth.css';
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <div className="app-container">
+          <Routes>
+            {/* Public Routes with Navbar/Footer */}
+            <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
+            <Route path="/about" element={<><Navbar /><About /><Footer /></>} />
+            <Route path="/contact" element={<><Navbar /><Contact /><Footer /></>} />
+
+            {/* Auth Routes (No Navbar/Footer usually, or different one) */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Protected Dashboard Route */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;
