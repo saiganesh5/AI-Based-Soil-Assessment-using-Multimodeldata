@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
@@ -323,6 +324,8 @@ export default function Dashboard() {
         return crops.map(crop => ({ name: crop, isIdeal: recommendedForSoil.includes(crop) }));
     }, [season, soilData]);
 
+    const { theme, toggleTheme } = useTheme();
+
     return (
         <div className="dashboard-page">
             {/* NAVBAR */}
@@ -332,6 +335,14 @@ export default function Dashboard() {
                     <span>Dashboard</span>
                     <span>Upload Data</span>
                     <span>History</span>
+                    <button
+                        className="btn-theme-toggle"
+                        onClick={toggleTheme}
+                        aria-label="Toggle theme"
+                        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                    >
+                        {theme === 'light' ? '🌙' : '☀️'}
+                    </button>
                     <button className="btn-logout" onClick={handleLogout}>🚪 Logout</button>
                 </div>
             </div>

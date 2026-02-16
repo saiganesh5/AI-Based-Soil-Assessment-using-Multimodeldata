@@ -360,3 +360,40 @@
         display: none;
     }
 }
+
+/* ==========================================
+   DARK THEME OVERRIDES
+   ========================================== */
+
+[data-theme="dark"] .auth-background {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+[data-theme="dark"] .auth-card {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .social-btn {
+    background: #334155;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .social-btn:hover {
+    background: #475569;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"] .divider::before,
+[data-theme="dark"] .divider::after {
+    background: #475569;
+}
+
+[data-theme="dark"] .auth-footer {
+    border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .strength-bar {
+    background: #334155;
+}

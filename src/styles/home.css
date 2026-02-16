@@ -85,6 +85,19 @@
     gap: var(--space-3);
 }
 
+.theme-toggle {
+    font-size: 1.2rem;
+    padding: 6px 10px !important;
+    border-radius: var(--radius-full) !important;
+    transition: all 0.3s ease;
+    line-height: 1;
+}
+
+.theme-toggle:hover {
+    transform: rotate(20deg) scale(1.15);
+    background: var(--bg-tertiary);
+}
+
 .mobile-menu-toggle {
     display: none;
     flex-direction: column;
@@ -702,4 +715,71 @@ section {
     .hero-cta .btn {
         width: 100%;
     }
+}
+
+/* ==========================================
+   DARK THEME OVERRIDES
+   ========================================== */
+
+[data-theme="dark"] .navbar {
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .nav-menu.active {
+    background: #1e293b;
+}
+
+[data-theme="dark"] .hero-background {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+[data-theme="dark"] .hero-overlay {
+    background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+[data-theme="dark"] .features {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .feature-card {
+    background: var(--bg-tertiary);
+    border-color: transparent;
+}
+
+[data-theme="dark"] .feature-card:hover {
+    background: var(--bg-primary);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .how-it-works {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+[data-theme="dark"] .step-content {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .benefits {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .cta-section {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+}
+
+[data-theme="dark"] .cta-card h2 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .cta-card p {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .section-label {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .mobile-menu-toggle span {
+    background: var(--text-primary);
 }

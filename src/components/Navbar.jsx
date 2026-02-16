@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Menu, X } from 'lucide-react';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { currentUser, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const location = useLocation();
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -39,6 +41,15 @@ export default function Navbar() {
                     </div>
 
                     <div className="nav-actions">
+                        <button
+                            className="btn btn-ghost btn-sm theme-toggle"
+                            onClick={toggleTheme}
+                            aria-label="Toggle theme"
+                            id="themeToggle"
+                            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                        >
+                            {theme === 'light' ? '🌙' : '☀️'}
+                        </button>
                         {currentUser ? (
                             <>
                                 <Link to="/dashboard" className="btn btn-primary btn-sm">Dashboard</Link>

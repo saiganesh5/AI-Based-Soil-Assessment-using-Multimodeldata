@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -23,28 +24,30 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="app-container">
-          <Routes>
-            {/* Public Routes with Navbar/Footer */}
-            <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
-            <Route path="/about" element={<><Navbar /><About /><Footer /></>} />
-            <Route path="/contact" element={<><Navbar /><Contact /><Footer /></>} />
+        <ThemeProvider>
+          <div className="app-container">
+            <Routes>
+              {/* Public Routes with Navbar/Footer */}
+              <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
+              <Route path="/about" element={<><Navbar /><About /><Footer /></>} />
+              <Route path="/contact" element={<><Navbar /><Contact /><Footer /></>} />
 
-            {/* Auth Routes (No Navbar/Footer usually, or different one) */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+              {/* Auth Routes (No Navbar/Footer usually, or different one) */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            {/* Protected Dashboard Route */}
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </div>
+              {/* Protected Dashboard Route */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );
