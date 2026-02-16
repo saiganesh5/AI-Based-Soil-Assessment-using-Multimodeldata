@@ -895,3 +895,77 @@ select:focus {
 [data-theme="dark"] .btn-logout {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
+
+/* Gauge center text */
+[data-theme="dark"] .gauge-center-text span {
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .gauge-center-text small {
+    color: #94a3b8;
+}
+
+/* Analysis card labels */
+[data-theme="dark"] .analysis-card label {
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .input-group label {
+    color: #cbd5e1;
+}
+
+/* Location suggestions dropdown */
+[data-theme="dark"] .location-suggestions {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .location-suggestions div {
+    color: #cbd5e1;
+    border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .location-suggestions div:hover {
+    background: #334155;
+}
+
+[data-theme="dark"] .location-suggestions strong {
+    color: #6ee7b7;
+}
+
+/* Timeline bullet border */
+[data-theme="dark"] .timeline-item::before {
+    border-color: #1e293b;
+}
+
+/* Map container */
+[data-theme="dark"] .map-container {
+    background: #334155;
+}
+
+/* Primary button disabled */
+[data-theme="dark"] .primary-btn:disabled {
+    background: #334155;
+    color: #64748b;
+}
+
+/* Count badge */
+[data-theme="dark"] .count-badge {
+    background: rgba(16, 185, 129, 0.12);
+    color: #6ee7b7;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* General card content text */
+[data-theme="dark"] .card p,
+[data-theme="dark"] .card span,
+[data-theme="dark"] .card label,
+[data-theme="dark"] .card strong {
+    color: #cbd5e1;
+}
+
+/* Ensure card h3 stays green */
+[data-theme="dark"] .card h3 {
+    color: #6ee7b7 !important;
+}
