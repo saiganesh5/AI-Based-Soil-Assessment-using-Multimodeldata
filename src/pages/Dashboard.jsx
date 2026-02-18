@@ -149,6 +149,13 @@ function MapClickHandler({ onMapClick }) {
     return null;
 }
 
+/* ---- shared tailwind class strings ---- */
+const cardCls = "bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-slate-700 transition-colors";
+const cardTitle = "text-lg font-bold text-gray-900 dark:text-white mb-4";
+const selectCls = "w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all";
+const labelCls = "block text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1";
+const placeholderText = "text-sm text-gray-400 dark:text-slate-500 italic";
+
 /* ===============================
    DASHBOARD COMPONENT
 ================================ */
@@ -175,11 +182,10 @@ export default function Dashboard() {
     const [showMapModal, setShowMapModal] = useState(false);
     const [mapMarker, setMapMarker] = useState(null);
 
-    // Derived data (memoized)
+    // Derived data
     const soilData = useMemo(() => analysisResult ? soilDatabase[analysisResult.soil_type] : null, [analysisResult]);
     const cropData = useMemo(() => selectedCrop ? cropIntelligence[selectedCrop] : null, [selectedCrop]);
 
-    // Gauge chart data (static, memoized)
     const gaugeData = useMemo(() => ({
         labels: Object.keys(soilDatabase),
         datasets: [{
@@ -198,7 +204,6 @@ export default function Dashboard() {
         plugins: { legend: { display: false }, tooltip: { enabled: false } }
     }), []);
 
-    // Financial calculations (memoized)
     const { totalFertilizerCost, revenue, netProfit } = useMemo(() => {
         if (!cropData) return { totalFertilizerCost: 0, revenue: 0, netProfit: 0 };
         let cost = 0;
@@ -212,7 +217,6 @@ export default function Dashboard() {
         return { totalFertilizerCost: cost, revenue: rev, netProfit: rev - cost };
     }, [cropData, acres]);
 
-    // Health score (memoized)
     const healthInfo = useMemo(() => {
         if (!analysisResult) return null;
         const score = soilHealthScores[analysisResult.soil_type] || 60;
@@ -242,7 +246,6 @@ export default function Dashboard() {
 
     const handleMapClick = useCallback((latlng) => {
         setMapMarker(latlng);
-        // Reverse geocode
         fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
             .then(r => r.json())
             .then(data => {
@@ -294,30 +297,25 @@ export default function Dashboard() {
         }
     }, [state, district, soilImage, climate]);
 
-    // Rotation advisor data
     const rotationData = useMemo(() => {
         if (!prevCrop) return null;
         return rotationAdvisor[prevCrop] || rotationAdvisor["None"];
     }, [prevCrop]);
 
-    // Irrigation data
     const irrigData = useMemo(() => {
         if (!selectedCrop) return null;
         return irrigationDatabase[selectedCrop] || { water: "Variable", method: "Drip Suggestion", freq: "Weekly check" };
     }, [selectedCrop]);
 
-    // Disease data
     const diseaseData = useMemo(() => {
         if (!selectedCrop) return null;
         return diseaseDatabase[selectedCrop] || { name: "Leaf Spot", risk: "Low", prevention: "Crop monitoring", pesticide: "Neem Oil" };
     }, [selectedCrop]);
 
-    // Subsidy data
     const subsidySchemes = useMemo(() => {
         return subsidyDatabase[state] || ["PM-KISAN (Central)", "Kissan Credit Card", "Crop Insurance"];
     }, [state]);
 
-    // Seasonal planner data
     const seasonalData = useMemo(() => {
         const crops = seasonalCrops[season] || [];
         const recommendedForSoil = soilData ? soilData.crops : [];
@@ -327,106 +325,124 @@ export default function Dashboard() {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <div className="dashboard-page">
+        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 transition-colors">
             {/* NAVBAR */}
-            <div className="navbar">
-                <div className="logo">🌱 AI-Based Soil Health Assessment</div>
-                <div className="menu">
-                    <span>Dashboard</span>
-                    <span>Upload Data</span>
-                    <span>History</span>
+            <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-lg font-bold">
+                    <span className="text-xl">🌱</span>
+                    <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">AI-Based Soil Health Assessment</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Dashboard</span>
+                    <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Upload Data</span>
+                    <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">History</span>
                     <button
-                        className="btn-theme-toggle"
+                        className="p-2 rounded-full text-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all cursor-pointer border-none bg-transparent"
                         onClick={toggleTheme}
                         aria-label="Toggle theme"
                         title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
                     >
                         {theme === 'light' ? '🌙' : '☀️'}
                     </button>
-                    <button className="btn-logout" onClick={handleLogout}>🚪 Logout</button>
+                    <button className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleLogout}>🚪 Logout</button>
                 </div>
             </div>
 
             {/* MAIN CONTENT */}
-            <div className="dashboard-container">
-                <div className="main-panel">
-                    <h2>Welcome, Farmer!</h2>
+            <div className="container py-8">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Welcome, Farmer!</h2>
 
-                    <div className="grid">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                        {/* 1. UPLOAD SOIL IMAGE */}
-                        <div className="card upload-card">
-                            <h3>Upload Soil Image</h3>
-                            <div className="image-placeholder" onClick={() => document.getElementById('soilImageInput').click()}>
-                                {soilImagePreview ? (
-                                    <img src={soilImagePreview} alt="Soil Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
-                                ) : (
-                                    <p>Click the button below to upload soil image</p>
-                                )}
-                            </div>
-                            <input type="file" id="soilImageInput" accept="image/*" onChange={handleImageChange} hidden />
-                            <button className="primary-btn" onClick={() => document.getElementById('soilImageInput').click()}>
-                                Upload Soil Image
-                            </button>
+                    {/* 1. UPLOAD SOIL IMAGE */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Upload Soil Image</h3>
+                        <div
+                            className="w-full h-48 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 flex items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors bg-gray-50 dark:bg-slate-700/50 overflow-hidden mb-4"
+                            onClick={() => document.getElementById('soilImageInput').click()}
+                        >
+                            {soilImagePreview ? (
+                                <img src={soilImagePreview} alt="Soil Preview" className="w-full h-full object-cover rounded-lg" />
+                            ) : (
+                                <p className={placeholderText}>Click to upload soil image</p>
+                            )}
                         </div>
+                        <input type="file" id="soilImageInput" accept="image/*" onChange={handleImageChange} hidden />
+                        <button className="btn btn-primary w-full" onClick={() => document.getElementById('soilImageInput').click()}>
+                            Upload Soil Image
+                        </button>
+                    </div>
 
-                        {/* 2. SOIL PARAMETERS */}
-                        <div className="card">
-                            <h3>Soil Parameters</h3>
-                            <div className="param"><span>pH Level</span><span>{analysisResult?.ph || '--'}</span></div>
-                            <div className="param"><span>Moisture (%)</span><span>{analysisResult ? `${analysisResult.moisture}%` : '--'}</span></div>
-                            <div className="param"><span>Nitrogen (mg/kg)</span><span>{analysisResult?.nutrients?.N || '--'}</span></div>
-                            <div className="param"><span>Phosphorus (mg/kg)</span><span>{analysisResult?.nutrients?.P || '--'}</span></div>
-                            <div className="param"><span>Potassium (mg/kg)</span><span>{analysisResult?.nutrients?.K || '--'}</span></div>
-                        </div>
-
-                        {/* 3. SOIL CLASSIFICATION (GAUGE) */}
-                        <div className="card gauge-card">
-                            <div className="card-header">
-                                <h3>Soil Classification</h3>
-                                {analysisResult && (
-                                    <div className="confidence-badge">
-                                        <span>{Math.floor(Math.random() * 10 + 88)}</span>% Match
-                                    </div>
-                                )}
-                            </div>
-                            <div className="gauge-layout">
-                                <div className="gauge-visual">
-                                    <Doughnut data={gaugeData} options={gaugeOptions} />
-                                    <div className="gauge-center-text">
-                                        <span>{analysisResult?.soil_type || '--'}</span>
-                                        <small>Soil Category</small>
-                                    </div>
+                    {/* 2. SOIL PARAMETERS */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Soil Parameters</h3>
+                        <div className="space-y-3">
+                            {[
+                                ['pH Level', analysisResult?.ph || '--'],
+                                ['Moisture (%)', analysisResult ? `${analysisResult.moisture}%` : '--'],
+                                ['Nitrogen (mg/kg)', analysisResult?.nutrients?.N || '--'],
+                                ['Phosphorus (mg/kg)', analysisResult?.nutrients?.P || '--'],
+                                ['Potassium (mg/kg)', analysisResult?.nutrients?.K || '--'],
+                            ].map(([label, value]) => (
+                                <div key={label} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                                    <span className="text-sm text-gray-600 dark:text-slate-400">{label}</span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{value}</span>
                                 </div>
-                                <div className="soil-legend">
-                                    {Object.entries(soilDatabase).map(([type, data]) => (
-                                        <div key={type} className={`legend-item ${analysisResult?.soil_type === type ? 'active' : ''}`}>
-                                            <span className="dot" style={{ background: data.color }}></span>
-                                            <span className="label">{type}</span>
-                                        </div>
-                                    ))}
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 3. SOIL CLASSIFICATION (GAUGE) */}
+                    <div className={cardCls}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Soil Classification</h3>
+                            {analysisResult && (
+                                <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                                    {Math.floor(Math.random() * 10 + 88)}% Match
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex flex-col md:flex-row items-center gap-6">
+                            <div className="relative w-48 h-28">
+                                <Doughnut data={gaugeData} options={gaugeOptions} />
+                                <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
+                                    <span className="text-base font-bold text-gray-900 dark:text-white">{analysisResult?.soil_type || '--'}</span>
+                                    <small className="text-xs text-gray-500 dark:text-slate-400">Soil Category</small>
                                 </div>
                             </div>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(soilDatabase).map(([type, data]) => (
+                                    <div key={type} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs ${analysisResult?.soil_type === type ? 'bg-emerald-100 dark:bg-emerald-900/30 font-bold' : ''}`}>
+                                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: data.color }}></span>
+                                        <span className="text-gray-600 dark:text-slate-400">{type}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+                    </div>
 
-                        {/* 4. ANALYSIS RESULTS */}
-                        <div className="card analysis-card">
-                            <h3>Analysis Results</h3>
-                            <div className="input-group">
-                                <label><strong>Indian State</strong></label>
-                                <select value={state} onChange={(e) => setState(e.target.value)}>
+                    {/* 4. ANALYSIS RESULTS */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Analysis Results</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <label className={labelCls}>Indian State</label>
+                                <select value={state} onChange={(e) => setState(e.target.value)} className={selectCls}>
                                     <option value="">Select State</option>
                                     {Object.keys(stateDistrictDB).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
-                            <label style={{ marginTop: '10px' }}><strong>District</strong></label>
-                            <div className="location-wrapper">
-                                <input type="text" placeholder="Enter District..." value={district} onChange={(e) => setDistrict(e.target.value)} />
-                                <button className="map-btn" onClick={() => setShowMapModal(true)}>📍</button>
+                            <div>
+                                <label className={labelCls}>District</label>
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="Enter District..." value={district} onChange={(e) => setDistrict(e.target.value)}
+                                        className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-gray-400 dark:placeholder:text-slate-500" />
+                                    <button className="px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-none cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors text-lg" onClick={() => setShowMapModal(true)}>📍</button>
+                                </div>
                             </div>
-                            <div className="input-group" style={{ marginTop: '10px' }}>
-                                <label><strong>Season/Climate</strong></label>
-                                <select value={climate} onChange={(e) => setClimate(e.target.value)}>
+                            <div>
+                                <label className={labelCls}>Season/Climate</label>
+                                <select value={climate} onChange={(e) => setClimate(e.target.value)} className={selectCls}>
                                     <option value="">Select Climate</option>
                                     <option value="summer">Summer</option>
                                     <option value="rainy">Rainy / Monsoon</option>
@@ -435,326 +451,337 @@ export default function Dashboard() {
                                     <option value="dry">Dry / Arid</option>
                                 </select>
                             </div>
-                            <button className="primary-btn analyze-btn" onClick={handleAnalyze} disabled={loading} style={{ marginTop: '15px' }}>
+                            <button className="btn btn-primary w-full mt-2" onClick={handleAnalyze} disabled={loading}>
                                 {loading ? 'Analyzing...' : 'Analyze Soil'}
                             </button>
                         </div>
+                    </div>
 
-                        {/* 5. SOIL INTELLIGENCE */}
-                        <div className="card intelligence-summary-card">
-                            <h3>Soil Intelligence</h3>
-                            {analysisResult ? (
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <strong style={{ fontSize: '20px', color: '#1b5e20' }}>{analysisResult.soil_type} Soil</strong>
+                    {/* 5. SOIL INTELLIGENCE */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Soil Intelligence</h3>
+                        {analysisResult ? (
+                            <div>
+                                <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{analysisResult.soil_type} Soil</div>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 leading-relaxed">{soilData?.notes}</p>
+                                {state && stateSoilMapping[state] && (
+                                    <div className="mt-4">
+                                        <span className="text-xs font-bold text-gray-500 dark:text-slate-400">Typical soils in {state}:</span>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {stateSoilMapping[state].map(s => (
+                                                <span key={s} className={`px-3 py-1 rounded-full text-xs font-medium ${s === analysisResult.soil_type ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400'}`}>
+                                                    {s} Soil
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <p style={{ marginTop: '12px', fontSize: '14px', color: '#555', lineHeight: '1.5' }}>{soilData?.notes}</p>
-                                    {state && stateSoilMapping[state] && (
-                                        <div style={{ marginTop: '15px', fontSize: '13px', color: '#555' }}>
-                                            <strong>Typical soils in {state}:</strong>
-                                            <div className="crops-display-grid" style={{ marginTop: '8px' }}>
-                                                {stateSoilMapping[state].map(s => (
-                                                    <span key={s} className={`chip ${s === analysisResult.soil_type ? 'active-match' : ''}`}>{s} Soil</span>
-                                                ))}
+                                )}
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Upload soil image and select state to see detailed intelligence.</p>
+                        )}
+                    </div>
+
+                    {/* 6. LAND AREA SELECTION */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Land Area Selection</h3>
+                        <div>
+                            <label className={labelCls}>Farm Size</label>
+                            <select value={acres} onChange={(e) => setAcres(Number(e.target.value))} className={selectCls}>
+                                {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(val => (
+                                    <option key={val} value={val}>{val} Acre{val !== 1 ? 's' : ''}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* 7. RECOMMENDED CROPS */}
+                    <div className={cardCls}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Recommended Crops</h3>
+                            <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                                {soilData ? `${soilData.crops.length} Crops Suitable` : '--'}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {soilData ? soilData.crops.map(crop => (
+                                <span key={crop}
+                                    className={`px-3 py-1.5 rounded-full text-sm cursor-pointer transition-all ${selectedCrop === crop ? 'bg-emerald-500 text-white font-bold shadow-lg' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'}`}
+                                    onClick={() => setSelectedCrop(crop)}>{crop}</span>
+                            )) : (
+                                <p className={placeholderText}>Results will appear here...</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 8. FERTILIZER RECOMMENDATIONS */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Fertilizer Recommendations</h3>
+                        {selectedCrop && cropData ? (
+                            <div className="space-y-3">
+                                <div className="text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2.5 rounded-lg">
+                                    Planning for <strong>{selectedCrop}</strong> on <strong>{acres}</strong> Acre(s).
+                                </div>
+                                {Object.entries(cropData.fertilizer).map(([name, kgPerAcre]) => {
+                                    const totalQty = (kgPerAcre * acres).toFixed(1);
+                                    const price = fertilizerPrices[name] || 0;
+                                    const lineCost = (totalQty * price);
+                                    return (
+                                        <div key={name} className="bg-emerald-50/50 dark:bg-slate-700/50 p-3 rounded-xl border-l-4 border-emerald-500 shadow-sm">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <strong className="text-sm text-emerald-800 dark:text-emerald-300">{name}</strong>
+                                                <span className="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-semibold">₹{lineCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[11px] text-gray-500 dark:text-slate-400 border-t border-dashed border-emerald-200 dark:border-emerald-700 pt-1">
+                                                <span>Qty: {totalQty} kg ({kgPerAcre} kg/Acre)</span>
+                                                <span>Rate: ₹{price}/kg</span>
                                             </div>
                                         </div>
-                                    )}
+                                    );
+                                })}
+                                <div className="mt-2 p-4 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl text-center">
+                                    <div className="text-xs uppercase tracking-wider opacity-90 mb-1">Estimated Fertilizer Cost</div>
+                                    <div className="text-2xl font-extrabold">₹{totalFertilizerCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Upload soil image and select state to see detailed intelligence.</p>
-                            )}
-                        </div>
-
-                        {/* 6. LAND AREA SELECTION */}
-                        <div className="card land-area-card">
-                            <h3>Land Area Selection</h3>
-                            <div className="input-group">
-                                <label><strong style={{ fontSize: '13px', color: '#666' }}>Farm Size</strong></label>
-                                <select value={acres} onChange={(e) => setAcres(Number(e.target.value))}>
-                                    {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(val => (
-                                        <option key={val} value={val}>{val} Acre{val !== 1 ? 's' : ''}</option>
-                                    ))}
-                                </select>
                             </div>
-                        </div>
+                        ) : (
+                            <p className={placeholderText}>Results will appear here...</p>
+                        )}
+                    </div>
 
-                        {/* 7. RECOMMENDED CROPS */}
-                        <div className="card recommendations-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                <h3 style={{ margin: 0 }}>Recommended Crops</h3>
-                                <span className="count-badge" style={{ background: '#e8f5e9', color: '#2e7d32', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700' }}>
-                                    {soilData ? `${soilData.crops.length} Crops Suitable` : '--'}
-                                </span>
-                            </div>
-                            <div className="crops-display-grid">
-                                {soilData ? soilData.crops.map(crop => (
-                                    <span key={crop} className={`chip ${selectedCrop === crop ? 'active-crop' : ''}`} onClick={() => setSelectedCrop(crop)}>{crop}</span>
-                                )) : (
-                                    <p className="placeholder-text">Results will appear here...</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 8. FERTILIZER RECOMMENDATIONS */}
-                        <div className="card recommendations-card">
-                            <h3>Fertilizer Recommendations</h3>
-                            {selectedCrop && cropData ? (
-                                <div className="fertilizer-display-grid" style={{ flexDirection: 'column' }}>
-                                    <div style={{ marginBottom: '10px', fontSize: '13px', color: '#1b5e20', background: '#e8f5e9', padding: '10px', borderRadius: '8px' }}>
-                                        Planning for <strong>{selectedCrop}</strong> on <strong>{acres}</strong> Acre(s).
-                                    </div>
-                                    {Object.entries(cropData.fertilizer).map(([name, kgPerAcre]) => {
-                                        const totalQty = (kgPerAcre * acres).toFixed(1);
-                                        const price = fertilizerPrices[name] || 0;
-                                        const lineCost = (totalQty * price);
-                                        return (
-                                            <div key={name} style={{ background: '#f1f8e9', padding: '12px', borderRadius: '10px', borderLeft: '5px solid #4caf50', width: '100%', marginBottom: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                                                    <strong style={{ color: '#1b5e20', fontSize: '15px' }}>{name}</strong>
-                                                    <span style={{ background: '#2e7d32', color: 'white', padding: '2px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>₹{lineCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666', borderTop: '1px dashed rgba(46,125,50,0.2)', paddingTop: '5px' }}>
-                                                    <span>Qty: {totalQty} kg ({kgPerAcre} kg/Acre)</span>
-                                                    <span>Rate: ₹{price}/kg</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    <div style={{ marginTop: '10px', padding: '15px', background: 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)', color: 'white', borderRadius: '12px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estimated Fertilizer Cost</div>
-                                        <div style={{ fontSize: '24px', fontWeight: '800' }}>₹{totalFertilizerCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                                    </div>
+                    {/* 9. CROP GROWTH INSIGHTS */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Crop Growth Insights</h3>
+                        {selectedCrop && cropData ? (
+                            <div>
+                                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-400">
+                                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Estimated Harvest: {cropData.duration} Days</span>
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Results will appear here...</p>
-                            )}
-                        </div>
-
-                        {/* 9. CROP GROWTH INSIGHTS */}
-                        <div className="card insights-card">
-                            <h3>Crop Growth Insights</h3>
-                            {selectedCrop && cropData ? (
-                                <div>
-                                    <div style={{ marginBottom: '15px', padding: '10px', background: '#fff8e1', borderRadius: '8px', borderLeft: '4px solid #ffb300' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#795548' }}>Estimated Harvest: {cropData.duration} Days</span>
-                                    </div>
-                                    <div className="timeline">
-                                        {cropData.schedule.map((s, idx) => (
-                                            <div key={idx} className="timeline-item">
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                                                    <strong style={{ fontSize: '14px', color: '#1b5e20' }}>{s.task}</strong>
-                                                    <span className="timeline-day">Day {s.day}</span>
-                                                </div>
-                                                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{s.note}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="placeholder-text">Select a crop to see growth timeline.</p>
-                            )}
-                        </div>
-
-                        {/* 10. SEASONAL CROP PLANNER */}
-                        <div className="card seasonal-planner-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                <h3 style={{ margin: 0 }}>Seasonal Crop Planner</h3>
-                                <select value={season} onChange={(e) => setSeason(e.target.value)} style={{ width: 'auto', padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}>
-                                    <option value="Kharif">Kharif</option>
-                                    <option value="Rabi">Rabi</option>
-                                    <option value="Zaid">Zaid</option>
-                                </select>
-                            </div>
-                            <div className="crops-display-grid">
-                                {seasonalData.length > 0 ? seasonalData.map(item => (
-                                    <span key={item.name} className={`chip ${item.isIdeal ? 'active-match' : ''}`} onClick={() => setSelectedCrop(item.name)} style={{ cursor: 'pointer', position: 'relative' }}>
-                                        {item.name}
-                                        {item.isIdeal && <span style={{ position: 'absolute', top: '-5px', right: '-5px', fontSize: '8px' }}>⭐</span>}
-                                    </span>
-                                )) : (
-                                    <p className="placeholder-text">Select a season...</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 11. YIELD PREDICTION */}
-                        <div className="card yield-card">
-                            <h3>Yield Prediction</h3>
-                            {selectedCrop && cropData ? (
-                                <div style={{ background: '#e1f5fe', padding: '15px', borderRadius: '12px', borderLeft: '5px solid #03a9f4' }}>
-                                    <div style={{ fontSize: '13px', color: '#01579b', marginBottom: '5px' }}>Expected Yield for <strong>{selectedCrop}</strong></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                        <span style={{ fontSize: '24px', fontWeight: '800', color: '#01579b' }}>{(cropData.yieldPerAcre * acres).toFixed(1)} <small style={{ fontSize: '14px' }}>Quintals</small></span>
-                                        <span style={{ fontSize: '12px', color: '#0277bd' }}>({cropData.yieldPerAcre} Q/Acre)</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="placeholder-text">Select a crop to view yield...</p>
-                            )}
-                        </div>
-
-                        {/* 12. PROFIT ESTIMATION */}
-                        <div className="card profit-card">
-                            <h3>Profit Estimation</h3>
-                            {selectedCrop && cropData ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                                        <span style={{ color: '#666' }}>Revenue:</span>
-                                        <span style={{ fontWeight: '600' }}>₹{revenue.toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                                        <span style={{ color: '#666' }}>Investment:</span>
-                                        <span style={{ fontWeight: '600', color: '#d32f2f' }}>- ₹{totalFertilizerCost.toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div style={{ marginTop: '5px', background: '#e8f5e9', padding: '15px', borderRadius: '12px', textAlign: 'center', border: '1px dashed #4caf50' }}>
-                                        <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#2e7d32', marginBottom: '3px' }}>Estimated Net Profit</div>
-                                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#1b5e20' }}>₹{netProfit.toLocaleString('en-IN')}</div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="placeholder-text">Calculation pending...</p>
-                            )}
-                        </div>
-
-                        {/* 13. FERTILIZER APPLICATION SCHEDULE */}
-                        <div className="card schedule-card">
-                            <h3>Fertilizer Application Schedule</h3>
-                            {selectedCrop && cropData ? (
-                                <div className="timeline">
+                                <div className="space-y-3 border-l-2 border-emerald-300 dark:border-emerald-700 pl-4">
                                     {cropData.schedule.map((s, idx) => (
-                                        <div key={idx} className="timeline-item">
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                                                <strong style={{ fontSize: '14px', color: '#1b5e20' }}>{s.task}</strong>
-                                                <span className="timeline-day">Day {s.day}</span>
+                                        <div key={idx} className="relative">
+                                            <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800"></div>
+                                            <div className="flex justify-between mb-0.5">
+                                                <strong className="text-sm text-emerald-700 dark:text-emerald-400">{s.task}</strong>
+                                                <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400 px-2 py-0.5 rounded-full">Day {s.day}</span>
                                             </div>
-                                            <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{s.note}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 m-0">{s.note}</p>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Timeline pending...</p>
-                            )}
-                        </div>
-
-                        {/* 14. SOIL HEALTH SCORE */}
-                        <div className="card health-score-card">
-                            <h3>Soil Health Score</h3>
-                            {healthInfo ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '48px', fontWeight: '900', color: healthInfo.color, lineHeight: 1 }}>{healthInfo.score}</div>
-                                    <div style={{ fontSize: '16px', fontWeight: '700', color: healthInfo.color, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>{healthInfo.label}</div>
-                                    <div style={{ width: '100%', height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${healthInfo.score}%`, height: '100%', background: healthInfo.color, borderRadius: '4px' }}></div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="placeholder-text">Score pending analysis...</p>
-                            )}
-                        </div>
-
-                        {/* 15. CROP ROTATION ADVISOR */}
-                        <div className="card rotation-card">
-                            <h3>Crop Rotation Advisor</h3>
-                            <div className="input-group" style={{ marginBottom: '15px' }}>
-                                <label><strong style={{ fontSize: '13px', color: '#666' }}>Previous Crop Grown</strong></label>
-                                <select value={prevCrop} onChange={(e) => setPrevCrop(e.target.value)}>
-                                    <option value="">Select Previous Crop</option>
-                                    <option value="Rice">Rice</option>
-                                    <option value="Wheat">Wheat</option>
-                                    <option value="Cotton">Cotton</option>
-                                    <option value="Maize">Maize</option>
-                                    <option value="Sugarcane">Sugarcane</option>
-                                    <option value="None">New Land / Fallow</option>
-                                </select>
                             </div>
-                            {rotationData ? (
-                                <div style={{ background: '#f3e5f5', borderLeft: '5px solid #9c27b0', padding: '12px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '11px', color: '#7b1fa2', fontWeight: '700', textTransform: 'uppercase' }}>Recommended Succession</div>
-                                    <div style={{ fontSize: '15px', fontWeight: '800', color: '#4a148c', margin: '4px 0' }}>{rotationData.next.join(", ")}</div>
-                                    <div style={{ fontSize: '12px', color: '#6a1b9a' }}><strong>Benefit:</strong> {rotationData.benefit}</div>
-                                    <p style={{ margin: '8px 0 0', fontSize: '12px', lineHeight: '1.4', color: '#444', fontStyle: 'italic' }}>{rotationData.note}</p>
+                        ) : (
+                            <p className={placeholderText}>Select a crop to see growth timeline.</p>
+                        )}
+                    </div>
+
+                    {/* 10. SEASONAL CROP PLANNER */}
+                    <div className={cardCls}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Seasonal Crop Planner</h3>
+                            <select value={season} onChange={(e) => setSeason(e.target.value)} className="px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-sm text-gray-800 dark:text-white">
+                                <option value="Kharif">Kharif</option>
+                                <option value="Rabi">Rabi</option>
+                                <option value="Zaid">Zaid</option>
+                            </select>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {seasonalData.length > 0 ? seasonalData.map(item => (
+                                <span key={item.name}
+                                    className={`relative px-3 py-1.5 rounded-full text-sm cursor-pointer transition-all ${item.isIdeal ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}
+                                    onClick={() => setSelectedCrop(item.name)}>
+                                    {item.name}
+                                    {item.isIdeal && <span className="absolute -top-1.5 -right-1.5 text-[8px]">⭐</span>}
+                                </span>
+                            )) : (
+                                <p className={placeholderText}>Select a season...</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 11. YIELD PREDICTION */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Yield Prediction</h3>
+                        {selectedCrop && cropData ? (
+                            <div className="bg-sky-50 dark:bg-sky-900/20 p-4 rounded-xl border-l-4 border-sky-400">
+                                <div className="text-sm text-sky-800 dark:text-sky-300 mb-1">Expected Yield for <strong>{selectedCrop}</strong></div>
+                                <div className="flex justify-between items-baseline">
+                                    <span className="text-2xl font-extrabold text-sky-800 dark:text-sky-300">{(cropData.yieldPerAcre * acres).toFixed(1)} <small className="text-sm font-normal">Quintals</small></span>
+                                    <span className="text-xs text-sky-600 dark:text-sky-400">({cropData.yieldPerAcre} Q/Acre)</span>
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Select previous crop to see advisor...</p>
-                            )}
-                        </div>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Select a crop to view yield...</p>
+                        )}
+                    </div>
 
-                        {/* 16. IRRIGATION PLANNING */}
-                        <div className="card irrigation-card">
-                            <h3>Irrigation Planning</h3>
-                            {irrigData ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                    <div style={{ background: '#e3f2fd', padding: '10px', borderRadius: '8px' }}>
-                                        <div style={{ fontSize: '10px', color: '#1976d2', textTransform: 'uppercase' }}>Water Need</div>
-                                        <div style={{ fontSize: '14px', fontWeight: '700' }}>{irrigData.water}</div>
-                                    </div>
-                                    <div style={{ background: '#e3f2fd', padding: '10px', borderRadius: '8px' }}>
-                                        <div style={{ fontSize: '10px', color: '#1976d2', textTransform: 'uppercase' }}>Method</div>
-                                        <div style={{ fontSize: '14px', fontWeight: '700' }}>{irrigData.method}</div>
-                                    </div>
-                                    <div style={{ gridColumn: 'span 2', background: '#f1f8e9', padding: '10px', borderRadius: '8px' }}>
-                                        <div style={{ fontSize: '10px', color: '#2e7d32', textTransform: 'uppercase' }}>Frequency</div>
-                                        <div style={{ fontSize: '12px' }}>{irrigData.freq}</div>
-                                    </div>
+                    {/* 12. PROFIT ESTIMATION */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Profit Estimation</h3>
+                        {selectedCrop && cropData ? (
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500 dark:text-slate-400">Revenue:</span>
+                                    <span className="font-semibold text-gray-900 dark:text-white">₹{revenue.toLocaleString('en-IN')}</span>
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Select a crop to view plan...</p>
-                            )}
-                        </div>
-
-                        {/* 17. CROP DISEASE RISK */}
-                        <div className="card disease-card">
-                            <h3>Crop Disease Risk</h3>
-                            {diseaseData ? (
-                                <div style={{ border: '1px solid #eee', borderRadius: '12px', padding: '12px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                        <strong style={{ color: '#333' }}>{diseaseData.name}</strong>
-                                        <span style={{ fontSize: '10px', background: diseaseData.risk === 'High' ? '#d32f2f' : diseaseData.risk === 'Medium' ? '#ef6c00' : '#2e7d32', color: 'white', padding: '2px 8px', borderRadius: '10px' }}>{diseaseData.risk} RISK</span>
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}><strong>Prevention:</strong> {diseaseData.prevention}</div>
-                                    <div style={{ fontSize: '12px', padding: '8px', background: '#fffde7', borderLeft: '3px solid #fbc02d', borderRadius: '4px' }}>
-                                        <strong>Recommended:</strong> {diseaseData.pesticide}
-                                    </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500 dark:text-slate-400">Investment:</span>
+                                    <span className="font-semibold text-red-600">- ₹{totalFertilizerCost.toLocaleString('en-IN')}</span>
                                 </div>
-                            ) : (
-                                <p className="placeholder-text">Risk assessment pending...</p>
-                            )}
-                        </div>
+                                <div className="mt-2 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center border border-dashed border-emerald-400">
+                                    <div className="text-xs uppercase text-emerald-600 dark:text-emerald-400 mb-1">Estimated Net Profit</div>
+                                    <div className="text-2xl font-extrabold text-emerald-800 dark:text-emerald-300">₹{netProfit.toLocaleString('en-IN')}</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Calculation pending...</p>
+                        )}
+                    </div>
 
-                        {/* 18. GOVERNMENT SUBSIDY & SCHEMES */}
-                        <div className="card subsidy-card">
-                            <h3>Government Subsidy & Schemes</h3>
-                            {analysisResult ? (
-                                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
-                                    {subsidySchemes.map((s, i) => <li key={i} style={{ marginBottom: '5px' }}>{s}</li>)}
-                                </ul>
-                            ) : (
-                                <p className="placeholder-text">Schemes will appear based on state and land...</p>
-                            )}
-                        </div>
+                    {/* 13. FERTILIZER APPLICATION SCHEDULE */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Fertilizer Application Schedule</h3>
+                        {selectedCrop && cropData ? (
+                            <div className="space-y-3 border-l-2 border-emerald-300 dark:border-emerald-700 pl-4">
+                                {cropData.schedule.map((s, idx) => (
+                                    <div key={idx} className="relative">
+                                        <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800"></div>
+                                        <div className="flex justify-between mb-0.5">
+                                            <strong className="text-sm text-emerald-700 dark:text-emerald-400">{s.task}</strong>
+                                            <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400 px-2 py-0.5 rounded-full">Day {s.day}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400 m-0">{s.note}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Timeline pending...</p>
+                        )}
+                    </div>
 
-                    </div> {/* end .grid */}
-                </div> {/* end .main-panel */}
-            </div> {/* end .dashboard-container */}
+                    {/* 14. SOIL HEALTH SCORE */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Soil Health Score</h3>
+                        {healthInfo ? (
+                            <div className="text-center">
+                                <div className="text-5xl font-black leading-none" style={{ color: healthInfo.color }}>{healthInfo.score}</div>
+                                <div className="text-base font-bold uppercase tracking-wider mb-3" style={{ color: healthInfo.color }}>{healthInfo.label}</div>
+                                <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${healthInfo.score}%`, background: healthInfo.color }}></div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Score pending analysis...</p>
+                        )}
+                    </div>
+
+                    {/* 15. CROP ROTATION ADVISOR */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Crop Rotation Advisor</h3>
+                        <div className="mb-4">
+                            <label className={labelCls}>Previous Crop Grown</label>
+                            <select value={prevCrop} onChange={(e) => setPrevCrop(e.target.value)} className={selectCls}>
+                                <option value="">Select Previous Crop</option>
+                                <option value="Rice">Rice</option>
+                                <option value="Wheat">Wheat</option>
+                                <option value="Cotton">Cotton</option>
+                                <option value="Maize">Maize</option>
+                                <option value="Sugarcane">Sugarcane</option>
+                                <option value="None">New Land / Fallow</option>
+                            </select>
+                        </div>
+                        {rotationData ? (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 p-3 rounded-lg">
+                                <div className="text-[11px] text-purple-700 dark:text-purple-300 font-bold uppercase">Recommended Succession</div>
+                                <div className="text-sm font-extrabold text-purple-900 dark:text-purple-200 my-1">{rotationData.next.join(", ")}</div>
+                                <div className="text-xs text-purple-600 dark:text-purple-400"><strong>Benefit:</strong> {rotationData.benefit}</div>
+                                <p className="mt-2 text-xs text-gray-600 dark:text-slate-400 italic m-0">{rotationData.note}</p>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Select previous crop to see advisor...</p>
+                        )}
+                    </div>
+
+                    {/* 16. IRRIGATION PLANNING */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Irrigation Planning</h3>
+                        {irrigData ? (
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-sky-50 dark:bg-sky-900/20 p-3 rounded-lg">
+                                    <div className="text-[10px] text-sky-600 dark:text-sky-400 uppercase font-bold">Water Need</div>
+                                    <div className="text-sm font-bold text-gray-900 dark:text-white">{irrigData.water}</div>
+                                </div>
+                                <div className="bg-sky-50 dark:bg-sky-900/20 p-3 rounded-lg">
+                                    <div className="text-[10px] text-sky-600 dark:text-sky-400 uppercase font-bold">Method</div>
+                                    <div className="text-sm font-bold text-gray-900 dark:text-white">{irrigData.method}</div>
+                                </div>
+                                <div className="col-span-2 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg">
+                                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-bold">Frequency</div>
+                                    <div className="text-xs text-gray-700 dark:text-slate-300">{irrigData.freq}</div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Select a crop to view plan...</p>
+                        )}
+                    </div>
+
+                    {/* 17. CROP DISEASE RISK */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Crop Disease Risk</h3>
+                        {diseaseData ? (
+                            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <strong className="text-sm text-gray-900 dark:text-white">{diseaseData.name}</strong>
+                                    <span className={`text-[10px] text-white px-2 py-0.5 rounded-full font-bold ${diseaseData.risk === 'High' ? 'bg-red-600' : diseaseData.risk === 'Medium' ? 'bg-orange-500' : 'bg-emerald-600'}`}>{diseaseData.risk} RISK</span>
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-slate-400"><strong>Prevention:</strong> {diseaseData.prevention}</div>
+                                <div className="text-xs bg-amber-50 dark:bg-amber-900/20 border-l-3 border-amber-400 p-2 rounded">
+                                    <strong>Recommended:</strong> {diseaseData.pesticide}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className={placeholderText}>Risk assessment pending...</p>
+                        )}
+                    </div>
+
+                    {/* 18. GOVERNMENT SUBSIDY & SCHEMES */}
+                    <div className={cardCls}>
+                        <h3 className={cardTitle}>Government Subsidy & Schemes</h3>
+                        {analysisResult ? (
+                            <ul className="space-y-2 list-none p-0 m-0">
+                                {subsidySchemes.map((s, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                                        {s}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className={placeholderText}>Schemes will appear based on state and land...</p>
+                        )}
+                    </div>
+
+                </div> {/* end grid */}
+            </div> {/* end container */}
 
             {/* MAP MODAL */}
             {showMapModal && (
-                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowMapModal(false); }}>
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h3>Select Location from Map</h3>
-                            <button className="close-modal" onClick={() => setShowMapModal(false)}>&times;</button>
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowMapModal(false); }}>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-slideUp">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-700">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white m-0">Select Location from Map</h3>
+                            <button className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600 border-none cursor-pointer text-lg" onClick={() => setShowMapModal(false)}>&times;</button>
                         </div>
-                        <div className="map-instructions">Click anywhere on the map to pin your location.</div>
-                        <div className="map-container">
-                            <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '400px', width: '100%' }}>
+                        <div className="px-4 py-2 text-xs text-gray-500 dark:text-slate-400">Click anywhere on the map to pin your location.</div>
+                        <div className="px-4">
+                            <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '400px', width: '100%', borderRadius: '12px' }}>
                                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
                                 <MapClickHandler onMapClick={handleMapClick} />
                                 {mapMarker && <Marker position={[mapMarker.lat, mapMarker.lng]} />}
                             </MapContainer>
                         </div>
-                        <div className="modal-footer">
-                            <button className="primary-btn" onClick={() => setShowMapModal(false)} disabled={!mapMarker}>Confirm Selection</button>
+                        <div className="p-4">
+                            <button className="btn btn-primary w-full" onClick={() => setShowMapModal(false)} disabled={!mapMarker}>Confirm Selection</button>
                         </div>
                     </div>
                 </div>

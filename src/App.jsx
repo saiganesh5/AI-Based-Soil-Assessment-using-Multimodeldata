@@ -16,23 +16,20 @@ import Contact from './pages/Contact';
 
 // Styles
 import './index.css';
-import './styles/home.css';
-import './styles/dashboard.css';
-import './styles/auth.css';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <ThemeProvider>
-          <div className="app-container">
+          <div className="min-h-screen flex flex-col">
             <Routes>
               {/* Public Routes with Navbar/Footer */}
               <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
               <Route path="/about" element={<><Navbar /><About /><Footer /></>} />
               <Route path="/contact" element={<><Navbar /><Contact /><Footer /></>} />
 
-              {/* Auth Routes (No Navbar/Footer usually, or different one) */}
+              {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 

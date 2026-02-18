@@ -15,34 +15,34 @@ export default function Navbar() {
     const isHomePage = location.pathname === '/';
 
     return (
-        <nav className="navbar" id="navbar">
+        <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 transition-colors duration-300" id="navbar">
             <div className="container">
-                <div className="nav-content">
-                    <Link to="/" className="logo">
-                        <span className="logo-icon">🌱</span>
-                        <span className="logo-text">AI Soil Health</span>
+                <div className="flex items-center justify-between h-16">
+                    <Link to="/" className="flex items-center gap-2 no-underline">
+                        <span className="text-2xl">🌱</span>
+                        <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">AI Soil Health</span>
                     </Link>
 
-                    <div className={`nav-menu ${isMenuOpen ? 'active' : ''}`} id="navMenu">
-                        <Link to="/" className="nav-link">Home</Link>
+                    <div className={`md:flex items-center gap-6 ${isMenuOpen ? 'flex flex-col absolute top-16 left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4 shadow-lg z-50' : 'hidden'}`} id="navMenu">
+                        <Link to="/" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">Home</Link>
                         {isHomePage ? (
                             <>
-                                <a href="#features" className="nav-link">Features</a>
-                                <a href="#how-it-works" className="nav-link">How It Works</a>
+                                <a href="#features" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">Features</a>
+                                <a href="#how-it-works" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">How It Works</a>
                             </>
                         ) : (
                             <>
-                                <Link to="/#features" className="nav-link">Features</Link>
-                                <Link to="/#how-it-works" className="nav-link">How It Works</Link>
+                                <Link to="/#features" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">Features</Link>
+                                <Link to="/#how-it-works" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">How It Works</Link>
                             </>
                         )}
-                        <Link to="/about" className="nav-link">About</Link>
-                        <Link to="/contact" className="nav-link">Contact</Link>
+                        <Link to="/about" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">About</Link>
+                        <Link to="/contact" className="text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors no-underline">Contact</Link>
                     </div>
 
-                    <div className="nav-actions">
+                    <div className="flex items-center gap-3">
                         <button
-                            className="btn btn-ghost btn-sm theme-toggle"
+                            className="p-2 rounded-full text-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-300 hover:rotate-12 hover:scale-110 cursor-pointer border-none bg-transparent"
                             onClick={toggleTheme}
                             aria-label="Toggle theme"
                             id="themeToggle"
@@ -64,7 +64,7 @@ export default function Navbar() {
                     </div>
 
                     <button
-                        className="mobile-menu-toggle"
+                        className="md:hidden flex flex-col gap-1 p-2 bg-transparent border-none cursor-pointer text-gray-600 dark:text-slate-300"
                         id="mobileMenuToggle"
                         aria-label="Toggle menu"
                         onClick={toggleMenu}
