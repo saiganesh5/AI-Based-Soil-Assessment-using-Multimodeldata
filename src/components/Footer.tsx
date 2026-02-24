@@ -1,7 +1,6 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function Footer() {
+export default function Footer(): React.JSX.Element {
     return (
         <footer className="bg-gray-900 dark:bg-slate-950 text-gray-300 py-16 mt-auto">
             <div className="container">

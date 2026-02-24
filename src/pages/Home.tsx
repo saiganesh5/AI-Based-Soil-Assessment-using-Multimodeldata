@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function Home() {
+export default function Home(): React.JSX.Element {
     return (
         <div>
             {/* HERO SECTION */}

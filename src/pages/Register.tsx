@@ -3,25 +3,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function Register() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [username, setUsername] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+export default function Register(): React.JSX.Element {
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [confirmPassword, setConfirmPassword] = useState<string>('');
+    const [username, setUsername] = useState<string>('');
+    const [firstName, setFirstName] = useState<string>('');
+    const [lastName, setLastName] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
 
-    const [strength, setStrength] = useState(0);
-    const [strengthText, setStrengthText] = useState('Password strength');
+    const [strength, setStrength] = useState<number>(0);
+    const [strengthText, setStrengthText] = useState<string>('Password strength');
 
     const { signup } = useAuth();
     const navigate = useNavigate();
 
-    function checkStrength(pass) {
+    function checkStrength(pass: string): void {
         let s = 0;
         if (pass.length > 5) s++;
         if (pass.length > 7) s++;
@@ -35,17 +35,18 @@ export default function Register() {
         else setStrengthText('Strong password');
     }
 
-    function handlePasswordChange(e) {
+    function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>): void {
         const val = e.target.value;
         setPassword(val);
         checkStrength(val);
     }
 
-    async function handleSubmit(e) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
         e.preventDefault();
 
         if (password !== confirmPassword) {
-            return setError('Passwords do not match');
+            setError('Passwords do not match');
+            return;
         }
 
         try {
@@ -55,7 +56,7 @@ export default function Register() {
             navigate('/login');
         } catch (err) {
             console.error(err);
-            setError(err.message || 'Failed to create an account.');
+            setError(err instanceof Error ? err.message : 'Failed to create an account.');
         } finally {
             setLoading(false);
         }
@@ -94,23 +95,23 @@ export default function Register() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label htmlFor="username" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Username</label>
-                            <input type="text" id="username" placeholder="Choose a unique username" required value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
+                            <input type="text" id="username" placeholder="Choose a unique username" required value={username} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)} className={inputClass} />
                         </div>
 
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">First Name</label>
-                                <input type="text" id="firstName" placeholder="John" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass} />
+                                <input type="text" id="firstName" placeholder="John" required value={firstName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)} className={inputClass} />
                             </div>
                             <div className="flex-1">
                                 <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Last Name</label>
-                                <input type="text" id="lastName" placeholder="Doe" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass} />
+                                <input type="text" id="lastName" placeholder="Doe" required value={lastName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)} className={inputClass} />
                             </div>
                         </div>
 
                         <div>
                             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Email Address</label>
-                            <input type="email" id="email" placeholder="your.email@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+                            <input type="email" id="email" placeholder="your.email@example.com" required value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} className={inputClass} />
                         </div>
 
                         <div>
@@ -132,7 +133,7 @@ export default function Register() {
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Confirm Password</label>
                             <div className="relative">
-                                <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" placeholder="Re-enter your password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`${inputClass} pr-12`} />
+                                <input type={showConfirmPassword ? "text" : "password"} id="confirmPassword" placeholder="Re-enter your password" required value={confirmPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)} className={`${inputClass} pr-12`} />
                                 <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 bg-transparent border-none cursor-pointer" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>

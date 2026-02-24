@@ -2,7 +2,11 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export default function PrivateRoute({ children }) {
+interface PrivateRouteProps {
+    children: React.ReactNode;
+}
+
+export default function PrivateRoute({ children }: PrivateRouteProps): React.JSX.Element {
     const { currentUser, loading } = useAuth();
 
     if (loading) {
@@ -13,5 +17,5 @@ export default function PrivateRoute({ children }) {
         );
     }
 
-    return currentUser ? children : <Navigate to="/login" />;
+    return currentUser ? <>{children}</> : <Navigate to="/login" />;
 }

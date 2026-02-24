@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -10,7 +10,8 @@ import L from 'leaflet';
 import ChatBot from '../components/ChatBot';
 
 // Fix Leaflet default icon
-delete L.Icon.Default.prototype._getIconUrl;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -18,6 +19,75 @@ L.Icon.Default.mergeOptions({
 });
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+/* ===============================
+   TYPE DEFINITIONS
+================================ */
+interface SoilInfo {
+    color: string;
+    crops: string[];
+    notes: string;
+}
+
+interface CropScheduleItem {
+    day: number;
+    task: string;
+    note: string;
+}
+
+interface CropIntelligenceItem {
+    duration: number;
+    yieldPerAcre: number;
+    marketPrice: number;
+    fertilizer: Record<string, number>;
+    schedule: CropScheduleItem[];
+}
+
+interface RotationInfo {
+    next: string[];
+    benefit: string;
+    note: string;
+}
+
+interface IrrigationInfo {
+    water: string;
+    method: string;
+    freq: string;
+}
+
+interface DiseaseInfo {
+    name: string;
+    risk: string;
+    prevention: string;
+    pesticide: string;
+}
+
+interface AnalysisResult {
+    soil_type: string;
+    ph: string;
+    moisture: number;
+    nutrients: { N: number; P: number; K: number };
+}
+
+interface HealthInfo {
+    score: number;
+    label: string;
+    color: string;
+}
+
+interface SeasonalItem {
+    name: string;
+    isIdeal: boolean;
+}
+
+interface MapLatLng {
+    lat: number;
+    lng: number;
+}
+
+interface MapClickHandlerProps {
+    onMapClick: (latlng: MapLatLng) => void;
+}
 
 /* ===============================
    DATA (matches js/dashboard.js)
@@ -144,7 +214,7 @@ const seasonalCrops = {
 /* ===============================
    MAP CLICK COMPONENT
 ================================ */
-function MapClickHandler({ onMapClick }) {
+function MapClickHandler({ onMapClick }: MapClickHandlerProps): null {
     useMapEvents({ click: (e) => onMapClick(e.latlng) });
     return null;
 }
@@ -159,32 +229,32 @@ const placeholderText = "text-sm text-gray-400 dark:text-slate-500 italic";
 /* ===============================
    DASHBOARD COMPONENT
 ================================ */
-export default function Dashboard() {
-    const { currentUser, logout } = useAuth();
+export default function Dashboard(): React.JSX.Element {
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     // Form state
-    const [soilImage, setSoilImage] = useState(null);
-    const [soilImagePreview, setSoilImagePreview] = useState(null);
-    const [state, setState] = useState('');
-    const [district, setDistrict] = useState('');
-    const [climate, setClimate] = useState('');
-    const [acres, setAcres] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [prevCrop, setPrevCrop] = useState('');
-    const [season, setSeason] = useState('Kharif');
+    const [soilImage, setSoilImage] = useState<File | null>(null);
+    const [soilImagePreview, setSoilImagePreview] = useState<string | null>(null);
+    const [state, setState] = useState<string>('');
+    const [district, setDistrict] = useState<string>('');
+    const [climate, setClimate] = useState<string>('');
+    const [acres, setAcres] = useState<number>(1);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [prevCrop, setPrevCrop] = useState<string>('');
+    const [season, setSeason] = useState<string>('Kharif');
 
     // Results state
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [selectedCrop, setSelectedCrop] = useState(null);
+    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
 
     // Map modal state
-    const [showMapModal, setShowMapModal] = useState(false);
-    const [mapMarker, setMapMarker] = useState(null);
+    const [showMapModal, setShowMapModal] = useState<boolean>(false);
+    const [mapMarker, setMapMarker] = useState<MapLatLng | null>(null);
 
     // Derived data
-    const soilData = useMemo(() => analysisResult ? soilDatabase[analysisResult.soil_type] : null, [analysisResult]);
-    const cropData = useMemo(() => selectedCrop ? cropIntelligence[selectedCrop] : null, [selectedCrop]);
+    const soilData = useMemo((): SoilInfo | null => analysisResult ? (soilDatabase as Record<string, SoilInfo>)[analysisResult.soil_type] ?? null : null, [analysisResult]);
+    const cropData = useMemo((): CropIntelligenceItem | null => selectedCrop ? (cropIntelligence as Record<string, CropIntelligenceItem>)[selectedCrop] ?? null : null, [selectedCrop]);
 
     const gaugeData = useMemo(() => ({
         labels: Object.keys(soilDatabase),
@@ -209,7 +279,7 @@ export default function Dashboard() {
         let cost = 0;
         Object.entries(cropData.fertilizer).forEach(([name, kgPerAcre]) => {
             const totalQty = kgPerAcre * acres;
-            const pricePerUnit = fertilizerPrices[name] || 0;
+            const pricePerUnit = (fertilizerPrices as Record<string, number>)[name] || 0;
             cost += totalQty * pricePerUnit;
         });
         const yieldTotal = cropData.yieldPerAcre * acres;
@@ -217,9 +287,9 @@ export default function Dashboard() {
         return { totalFertilizerCost: cost, revenue: rev, netProfit: rev - cost };
     }, [cropData, acres]);
 
-    const healthInfo = useMemo(() => {
+    const healthInfo = useMemo((): HealthInfo | null => {
         if (!analysisResult) return null;
-        const score = soilHealthScores[analysisResult.soil_type] || 60;
+        const score = (soilHealthScores as Record<string, number>)[analysisResult.soil_type] || 60;
         let label = "Moderate", color = "#f9a825";
         if (score >= 90) { label = "Excellent"; color = "#2e7d32"; }
         else if (score >= 75) { label = "Healthy"; color = "#43a047"; }
@@ -230,12 +300,12 @@ export default function Dashboard() {
     }, [analysisResult]);
 
     // Handlers
-    const handleImageChange = useCallback((e) => {
-        const file = e.target.files[0];
+    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
         setSoilImage(file);
         const reader = new FileReader();
-        reader.onload = (ev) => setSoilImagePreview(ev.target.result);
+        reader.onload = (ev) => setSoilImagePreview(ev.target?.result as string);
         reader.readAsDataURL(file);
     }, []);
 
@@ -244,11 +314,11 @@ export default function Dashboard() {
         catch (err) { console.error('Logout failed:', err); }
     }, [logout, navigate]);
 
-    const handleMapClick = useCallback((latlng) => {
+    const handleMapClick = useCallback((latlng: MapLatLng) => {
         setMapMarker(latlng);
         fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
             .then(r => r.json())
-            .then(data => {
+            .then((data: { address?: { county?: string; state_district?: string; city?: string; state?: string } }) => {
                 if (data.address) {
                     const loc = data.address.county || data.address.state_district || data.address.city || "Unknown";
                     setDistrict(`${loc}, ${data.address.state || ''}`);
@@ -264,14 +334,14 @@ export default function Dashboard() {
 
         setLoading(true);
         try {
-            let result;
+            let result: AnalysisResult;
             try {
                 const response = await fetch("http://127.0.0.1:5000/analyze", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ location: district, state, climate })
                 });
-                if (response.ok) result = await response.json();
+                if (response.ok) result = await response.json() as AnalysisResult;
                 else throw new Error("Backend offline");
             } catch {
                 const soilKeys = Object.keys(soilDatabase);
@@ -282,12 +352,12 @@ export default function Dashboard() {
                     nutrients: { N: Math.floor(Math.random() * 200), P: Math.floor(Math.random() * 100), K: Math.floor(Math.random() * 400) }
                 };
             }
-            if (!soilDatabase[result.soil_type]) {
+            if (!(soilDatabase as Record<string, SoilInfo>)[result.soil_type]) {
                 const soilKeys = Object.keys(soilDatabase);
                 result.soil_type = soilKeys[Math.floor(Math.random() * soilKeys.length)];
             }
             setAnalysisResult(result);
-            const sd = soilDatabase[result.soil_type];
+            const sd = (soilDatabase as Record<string, SoilInfo>)[result.soil_type];
             if (sd && sd.crops.length > 0) setSelectedCrop(sd.crops[0]);
         } catch (err) {
             console.error("Analysis error:", err);
@@ -297,27 +367,27 @@ export default function Dashboard() {
         }
     }, [state, district, soilImage, climate]);
 
-    const rotationData = useMemo(() => {
+    const rotationData = useMemo((): RotationInfo | null => {
         if (!prevCrop) return null;
-        return rotationAdvisor[prevCrop] || rotationAdvisor["None"];
+        return (rotationAdvisor as Record<string, RotationInfo>)[prevCrop] || rotationAdvisor["None"];
     }, [prevCrop]);
 
-    const irrigData = useMemo(() => {
+    const irrigData = useMemo((): IrrigationInfo | null => {
         if (!selectedCrop) return null;
-        return irrigationDatabase[selectedCrop] || { water: "Variable", method: "Drip Suggestion", freq: "Weekly check" };
+        return (irrigationDatabase as Record<string, IrrigationInfo>)[selectedCrop] || { water: "Variable", method: "Drip Suggestion", freq: "Weekly check" };
     }, [selectedCrop]);
 
-    const diseaseData = useMemo(() => {
+    const diseaseData = useMemo((): DiseaseInfo | null => {
         if (!selectedCrop) return null;
-        return diseaseDatabase[selectedCrop] || { name: "Leaf Spot", risk: "Low", prevention: "Crop monitoring", pesticide: "Neem Oil" };
+        return (diseaseDatabase as Record<string, DiseaseInfo>)[selectedCrop] || { name: "Leaf Spot", risk: "Low", prevention: "Crop monitoring", pesticide: "Neem Oil" };
     }, [selectedCrop]);
 
-    const subsidySchemes = useMemo(() => {
-        return subsidyDatabase[state] || ["PM-KISAN (Central)", "Kissan Credit Card", "Crop Insurance"];
+    const subsidySchemes = useMemo((): string[] => {
+        return (subsidyDatabase as Record<string, string[]>)[state] || ["PM-KISAN (Central)", "Kissan Credit Card", "Crop Insurance"];
     }, [state]);
 
-    const seasonalData = useMemo(() => {
-        const crops = seasonalCrops[season] || [];
+    const seasonalData = useMemo((): SeasonalItem[] => {
+        const crops = (seasonalCrops as Record<string, string[]>)[season] || [];
         const recommendedForSoil = soilData ? soilData.crops : [];
         return crops.map(crop => ({ name: crop, isIdeal: recommendedForSoil.includes(crop) }));
     }, [season, soilData]);
@@ -359,7 +429,7 @@ export default function Dashboard() {
                         <h3 className={cardTitle}>Upload Soil Image</h3>
                         <div
                             className="w-full h-48 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 flex items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors bg-gray-50 dark:bg-slate-700/50 overflow-hidden mb-4"
-                            onClick={() => document.getElementById('soilImageInput').click()}
+                            onClick={() => (document.getElementById('soilImageInput') as HTMLInputElement)?.click()}
                         >
                             {soilImagePreview ? (
                                 <img src={soilImagePreview} alt="Soil Preview" className="w-full h-full object-cover rounded-lg" />
@@ -368,7 +438,7 @@ export default function Dashboard() {
                             )}
                         </div>
                         <input type="file" id="soilImageInput" accept="image/*" onChange={handleImageChange} hidden />
-                        <button className="btn btn-primary w-full" onClick={() => document.getElementById('soilImageInput').click()}>
+                        <button className="btn btn-primary w-full" onClick={() => (document.getElementById('soilImageInput') as HTMLInputElement)?.click()}>
                             Upload Soil Image
                         </button>
                     </div>
@@ -464,11 +534,11 @@ export default function Dashboard() {
                             <div>
                                 <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{analysisResult.soil_type} Soil</div>
                                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 leading-relaxed">{soilData?.notes}</p>
-                                {state && stateSoilMapping[state] && (
+                                {state && (stateSoilMapping as Record<string, string[]>)[state] && (
                                     <div className="mt-4">
                                         <span className="text-xs font-bold text-gray-500 dark:text-slate-400">Typical soils in {state}:</span>
                                         <div className="flex flex-wrap gap-2 mt-2">
-                                            {stateSoilMapping[state].map(s => (
+                                            {(stateSoilMapping as Record<string, string[]>)[state].map(s => (
                                                 <span key={s} className={`px-3 py-1 rounded-full text-xs font-medium ${s === analysisResult.soil_type ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400'}`}>
                                                     {s} Soil
                                                 </span>
@@ -524,8 +594,8 @@ export default function Dashboard() {
                                 </div>
                                 {Object.entries(cropData.fertilizer).map(([name, kgPerAcre]) => {
                                     const totalQty = (kgPerAcre * acres).toFixed(1);
-                                    const price = fertilizerPrices[name] || 0;
-                                    const lineCost = (totalQty * price);
+                                    const price = (fertilizerPrices as Record<string, number>)[name] || 0;
+                                    const lineCost = (parseFloat(totalQty) * price);
                                     return (
                                         <div key={name} className="bg-emerald-50/50 dark:bg-slate-700/50 p-3 rounded-xl border-l-4 border-emerald-500 shadow-sm">
                                             <div className="flex justify-between items-center mb-1">
@@ -766,7 +836,7 @@ export default function Dashboard() {
 
             {/* MAP MODAL */}
             {showMapModal && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowMapModal(false); }}>
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) setShowMapModal(false); }}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-slideUp">
                         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-700">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white m-0">Select Location from Map</h3>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
 
 const SYSTEM_PROMPT = `You are "SoilBot", a friendly AI assistant for an AI-Based Soil Health Assessment platform for Indian farmers. You help with:
@@ -15,16 +15,21 @@ Keep responses concise (2-4 sentences for simple questions, more for detailed on
 
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
-export default function ChatBot() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([
+interface Message {
+    role: 'user' | 'bot';
+    text: string;
+}
+
+export default function ChatBot(): React.JSX.Element {
+    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [messages, setMessages] = useState<Message[]>([
         { role: 'bot', text: 'Hello! 🌱 I\'m SoilBot, your soil health assistant. Ask me anything about soil, crops, fertilizers, or farming!' }
     ]);
-    const [input, setInput] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const messagesEndRef = useRef(null);
-    const inputRef = useRef(null);
-    const chatHistoryRef = useRef([]);
+    const [input, setInput] = useState<string>('');
+    const [isTyping, setIsTyping] = useState<boolean>(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const chatHistoryRef = useRef<Message[]>([]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,7 +45,7 @@ export default function ChatBot() {
         const trimmed = input.trim();
         if (!trimmed || isTyping) return;
 
-        const userMsg = { role: 'user', text: trimmed };
+        const userMsg: Message = { role: 'user', text: trimmed };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsTyping(true);
@@ -74,7 +79,7 @@ export default function ChatBot() {
         }
     }, [input, isTyping]);
 
-    const handleKeyDown = useCallback((e) => {
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
@@ -86,8 +91,8 @@ export default function ChatBot() {
             {/* Floating Action Button */}
             <button
                 className={`fixed bottom-6 right-6 w-14 h-14 rounded-full text-xl cursor-pointer border-none z-[9999] shadow-xl transition-all duration-300 hover:scale-110 ${isOpen
-                        ? 'bg-gray-600 dark:bg-slate-600 text-white rotate-90'
-                        : 'bg-gradient-to-br from-emerald-500 to-green-600 text-white animate-fab-pulse'
+                    ? 'bg-gray-600 dark:bg-slate-600 text-white rotate-90'
+                    : 'bg-gradient-to-br from-emerald-500 to-green-600 text-white animate-fab-pulse'
                     }`}
                 onClick={() => setIsOpen(prev => !prev)}
                 aria-label="Toggle chatbot"
@@ -124,14 +129,14 @@ export default function ChatBot() {
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                             <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm ${msg.role === 'bot'
-                                    ? 'bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900 dark:to-green-800'
-                                    : 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'
+                                ? 'bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900 dark:to-green-800'
+                                : 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800'
                                 }`}>
                                 {msg.role === 'bot' ? '🌱' : '👤'}
                             </div>
                             <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-br-sm'
-                                    : 'bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-bl-sm shadow-sm border border-gray-100 dark:border-slate-600'
+                                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-br-sm'
+                                : 'bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-bl-sm shadow-sm border border-gray-100 dark:border-slate-600'
                                 }`}>
                                 {msg.text}
                             </div>
@@ -161,7 +166,7 @@ export default function ChatBot() {
                         type="text"
                         placeholder="Ask about soil, crops, fertilizers..."
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={isTyping}
                         id="chatbot-input"

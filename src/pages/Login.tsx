@@ -3,17 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+export default function Login(): React.JSX.Element {
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    async function handleSubmit(e) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
         e.preventDefault();
 
         try {
@@ -23,7 +23,7 @@ export default function Login() {
             navigate('/dashboard');
         } catch (err) {
             console.error(err);
-            setError(err.message || 'Failed to sign in. Please check your credentials.');
+            setError(err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -60,7 +60,7 @@ export default function Login() {
                             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Email Address</label>
                             <input
                                 type="email" id="email" placeholder="your.email@example.com" required
-                                value={email} onChange={(e) => setEmail(e.target.value)}
+                                value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-slate-500"
                             />
                         </div>
@@ -70,7 +70,7 @@ export default function Login() {
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"} id="password" placeholder="Enter your password" required
-                                    value={password} onChange={(e) => setPassword(e.target.value)}
+                                    value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-12 placeholder:text-gray-400 dark:placeholder:text-slate-500"
                                 />
                                 <button

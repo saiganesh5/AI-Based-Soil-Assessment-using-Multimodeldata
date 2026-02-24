@@ -1,15 +1,38 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const API_BASE = 'http://localhost:8080';
-const AuthContext = createContext();
 
-export function useAuth() {
-    return useContext(AuthContext);
+interface User {
+    email: string;
+    displayName: string;
+    token: string;
 }
 
-export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+interface AuthContextType {
+    currentUser: User | null;
+    loading: boolean;
+    signup: (email: string, password: string, firstName: string, lastName: string, username: string) => Promise<unknown>;
+    login: (email: string, password: string) => Promise<unknown>;
+    logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function useAuth(): AuthContextType {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
+
+interface AuthProviderProps {
+    children: React.ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
     // On mount, check for saved token and restore session
     useEffect(() => {
@@ -22,7 +45,7 @@ export function AuthProvider({ children }) {
                     if (!res.ok) throw new Error('Token invalid');
                     return res.json();
                 })
-                .then(data => {
+                .then((data: { email: string; displayName: string }) => {
                     setCurrentUser({
                         email: data.email,
                         displayName: data.displayName,
@@ -38,7 +61,7 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    async function signup(email, password, firstName, lastName, username) {
+    async function signup(email: string, password: string, firstName: string, lastName: string, username: string): Promise<unknown> {
         const res = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -54,7 +77,7 @@ export function AuthProvider({ children }) {
         return await res.json();
     }
 
-    async function login(email, password) {
+    async function login(email: string, password: string): Promise<unknown> {
         const res = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -66,7 +89,7 @@ export function AuthProvider({ children }) {
             throw new Error(msg || 'Login failed');
         }
 
-        const data = await res.json();
+        const data = await res.json() as { email: string; displayName: string; token: string };
         localStorage.setItem('token', data.token);
         setCurrentUser({
             email: data.email,
@@ -76,13 +99,13 @@ export function AuthProvider({ children }) {
         return data;
     }
 
-    function logout() {
+    function logout(): Promise<void> {
         localStorage.removeItem('token');
         setCurrentUser(null);
         return Promise.resolve();
     }
 
-    const value = {
+    const value: AuthContextType = {
         currentUser,
         loading,
         signup,

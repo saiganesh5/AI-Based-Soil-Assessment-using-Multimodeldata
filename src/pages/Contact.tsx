@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 
-export default function Contact() {
-    const [formData, setFormData] = useState({
+interface ContactFormData {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+}
+
+export default function Contact(): React.JSX.Element {
+    const [formData, setFormData] = useState<ContactFormData>({
         name: '',
         email: '',
         subject: '',
         message: ''
     });
-    const [submitted, setSubmitted] = useState(false);
+    const [submitted, setSubmitted] = useState<boolean>(false);
 
-    function handleChange(e) {
+    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -17,7 +24,7 @@ export default function Contact() {
         }));
     }
 
-    function handleSubmit(e) {
+    function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
         e.preventDefault();
         console.log('Form submitted:', formData);
         setSubmitted(true);
@@ -74,7 +81,7 @@ export default function Contact() {
                                 <div>
                                     <label htmlFor="message" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Message*</label>
                                     <textarea
-                                        id="message" name="message" placeholder="Type your message here..." rows="6" required
+                                        id="message" name="message" placeholder="Type your message here..." rows={6} required
                                         value={formData.message} onChange={handleChange}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all resize-y placeholder:text-gray-400 dark:placeholder:text-slate-500"
                                     ></textarea>

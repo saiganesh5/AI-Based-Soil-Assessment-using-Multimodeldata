@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Menu, X } from 'lucide-react';
 
-export default function Navbar() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+export default function Navbar(): React.JSX.Element {
+    const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
     const { currentUser, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
 
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+    const toggleMenu = (): void => setIsMenuOpen(!isMenuOpen);
 
     const isHomePage = location.pathname === '/';
 
