@@ -53,6 +53,7 @@ export default function Navbar(): React.JSX.Element {
                         {currentUser ? (
                             <>
                                 <Link to="/dashboard" className="btn btn-primary btn-sm">Dashboard</Link>
+                                <Link to="/weather" className="btn btn-ghost btn-sm text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20">🌦️ Weather</Link>
                                 <button onClick={logout} className="btn btn-ghost btn-sm">Logout</button>
                             </>
                         ) : (

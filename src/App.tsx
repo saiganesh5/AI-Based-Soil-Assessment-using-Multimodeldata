@@ -12,6 +12,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Weather from './pages/Weather';
 
 // Styles
 import './index.css';
@@ -38,6 +39,14 @@ function App(): React.JSX.Element {
                                 element={
                                     <PrivateRoute>
                                         <Dashboard />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/weather"
+                                element={
+                                    <PrivateRoute>
+                                        <Weather />
                                     </PrivateRoute>
                                 }
                             />
