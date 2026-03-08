@@ -10,9 +10,11 @@ interface HourlyWeather {
     humidity: number;
     wind_speed: number;
     pop: number; // probability of precipitation (0-1)
-    rain?: { '3h': number };
+    rain: number; // mm of precipitation (hourly)
     weather: { id: number; main: string; description: string; icon: string }[];
-    uvi?: number;
+    uvi: number;
+    dew_point?: number;
+    et0?: number; // evapotranspiration (mm)
 }
 
 interface CurrentWeather {
@@ -51,36 +53,40 @@ interface Advisory {
 function generateMockData(lat: number, _lng: number): WeatherAPIResponse {
     const now = Math.floor(Date.now() / 1000);
     const baseTemp = lat > 25 ? 28 + Math.random() * 8 : 32 + Math.random() * 6;
+    const baseHumidity = 55 + Math.floor(Math.random() * 30);
 
     const current: CurrentWeather = {
         dt: now,
         temp: baseTemp,
         feels_like: baseTemp + 2,
-        humidity: 55 + Math.floor(Math.random() * 30),
+        humidity: baseHumidity,
         wind_speed: 2 + Math.random() * 8,
         uvi: 4 + Math.random() * 6,
-        weather: [{ id: 802, main: 'Clouds', description: 'scattered clouds', icon: '03d' }]
+        weather: [{ id: 2, main: 'Clouds', description: 'partly cloudy', icon: '03d' }]
     };
 
-    const hourly: HourlyWeather[] = Array.from({ length: 8 }, (_, i) => {
-        const hourTemp = baseTemp + (Math.random() - 0.5) * 6 - (i > 4 ? i * 0.5 : 0);
+    const hourly: HourlyWeather[] = Array.from({ length: 24 }, (_, i) => {
+        const hourTemp = baseTemp + (Math.random() - 0.5) * 6 - (i > 12 ? (i - 12) * 0.4 : 0);
         const rainChance = Math.random();
+        const hum = Math.min(100, 50 + Math.floor(Math.random() * 40));
         return {
-            dt: now + (i + 1) * 3 * 3600, // 3-hour intervals
+            dt: now + (i + 1) * 3600, // hourly intervals
             temp: Math.round(hourTemp * 10) / 10,
             feels_like: Math.round((hourTemp + 1.5) * 10) / 10,
-            humidity: Math.min(100, 50 + Math.floor(Math.random() * 40)),
+            humidity: hum,
             wind_speed: Math.round((1.5 + Math.random() * 10) * 10) / 10,
             pop: Math.round(rainChance * 100) / 100,
-            rain: rainChance > 0.6 ? { '3h': Math.round(Math.random() * 12 * 10) / 10 } : undefined,
+            rain: rainChance > 0.6 ? Math.round(Math.random() * 5 * 10) / 10 : 0,
             weather: [
                 rainChance > 0.7
-                    ? { id: 500, main: 'Rain', description: 'light rain', icon: '10d' }
+                    ? { id: 61, main: 'Rain', description: 'light rain', icon: '10d' }
                     : rainChance > 0.4
-                        ? { id: 802, main: 'Clouds', description: 'scattered clouds', icon: '03d' }
-                        : { id: 800, main: 'Clear', description: 'clear sky', icon: '01d' }
+                        ? { id: 2, main: 'Clouds', description: 'partly cloudy', icon: '03d' }
+                        : { id: 0, main: 'Clear', description: 'clear sky', icon: '01d' }
             ],
-            uvi: Math.max(0, 5 + (Math.random() - 0.5) * 8 - i * 0.6),
+            uvi: Math.max(0, 5 + (Math.random() - 0.5) * 8 - (i > 6 ? (i - 6) * 0.5 : 0)),
+            dew_point: hourTemp - 5 + Math.random() * 3,
+            et0: 0.15 + Math.random() * 0.3,
         };
     });
 
@@ -90,20 +96,38 @@ function generateMockData(lat: number, _lng: number): WeatherAPIResponse {
 /* ===============================
    HELPER FUNCTIONS
 ================================ */
-function formatHour(unixTs: number): string {
-    return new Date(unixTs * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+function formatHour(dt: number | string): string {
+    // Open-Meteo returns ISO strings; mock data uses unix seconds
+    const date = typeof dt === 'string' ? new Date(dt) : new Date(dt * 1000);
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-function getWeatherEmoji(weatherId: number): string {
-    if (weatherId >= 200 && weatherId < 300) return '⛈️';
-    if (weatherId >= 300 && weatherId < 400) return '🌦️';
-    if (weatherId >= 500 && weatherId < 600) return '🌧️';
-    if (weatherId >= 600 && weatherId < 700) return '❄️';
-    if (weatherId >= 700 && weatherId < 800) return '🌫️';
-    if (weatherId === 800) return '☀️';
-    if (weatherId === 801) return '🌤️';
-    if (weatherId >= 802) return '☁️';
+// WMO Weather interpretation codes (used by Open-Meteo)
+function getWeatherEmoji(wmoCode: number): string {
+    if (wmoCode === 0) return '☀️';           // Clear sky
+    if (wmoCode <= 3) return '⛅';             // Partly cloudy
+    if (wmoCode <= 49) return '🌫️';           // Fog
+    if (wmoCode <= 59) return '🌦️';           // Drizzle
+    if (wmoCode <= 69) return '🌧️';           // Rain
+    if (wmoCode <= 79) return '❄️';            // Snow
+    if (wmoCode <= 84) return '🌧️';           // Rain showers
+    if (wmoCode <= 86) return '🌨️';           // Snow showers
+    if (wmoCode >= 95) return '⛈️';            // Thunderstorm
     return '🌡️';
+}
+
+function wmoDescription(code: number): string {
+    const d: Record<number, string> = {
+        0: 'clear sky', 1: 'mainly clear', 2: 'partly cloudy', 3: 'overcast',
+        45: 'fog', 48: 'depositing rime fog',
+        51: 'light drizzle', 53: 'moderate drizzle', 55: 'dense drizzle',
+        61: 'slight rain', 63: 'moderate rain', 65: 'heavy rain',
+        71: 'slight snow', 73: 'moderate snow', 75: 'heavy snow',
+        80: 'slight rain showers', 81: 'moderate rain showers', 82: 'violent rain showers',
+        85: 'slight snow showers', 86: 'heavy snow showers',
+        95: 'thunderstorm', 96: 'thunderstorm with slight hail', 99: 'thunderstorm with heavy hail',
+    };
+    return d[code] || 'unknown';
 }
 
 function advisoryColor(level: AdvisoryLevel): string {
@@ -201,8 +225,8 @@ function tempStressScore(temps: number[]): { score: number; detail: string } {
 // Weighted cumulative rain probability + actual rainfall volume
 function precipRiskScore(forecast: HourlyWeather[]): { score: number; detail: string } {
     const avgPop = forecast.reduce((s, h) => s + h.pop, 0) / forecast.length;
-    const totalRain = forecast.reduce((s, h) => s + (h.rain?.['3h'] || 0), 0);
-    const heavyPeriods = forecast.filter(h => (h.rain?.['3h'] || 0) > 5).length;
+    const totalRain = forecast.reduce((s, h) => s + h.rain, 0);
+    const heavyPeriods = forecast.filter(h => h.rain > 5).length;
 
     let score = 100;
     score -= avgPop * 50;                    // probability penalty
@@ -302,8 +326,8 @@ function workerSafetyScore(current: CurrentWeather, forecast: HourlyWeather[]): 
 // -- Soil Workability Score --
 // Based on rainfall impact on soil moisture — too wet = can't plough/harvest
 function soilWorkabilityScore(forecast: HourlyWeather[]): { score: number; detail: string } {
-    const totalRain = forecast.reduce((s, h) => s + (h.rain?.['3h'] || 0), 0);
-    const recentHeavyRain = forecast.slice(0, 3).reduce((s, h) => s + (h.rain?.['3h'] || 0), 0);
+    const totalRain = forecast.reduce((s, h) => s + h.rain, 0);
+    const recentHeavyRain = forecast.slice(0, 3).reduce((s, h) => s + h.rain, 0);
     const avgHumidity = forecast.reduce((s, h) => s + h.humidity, 0) / forecast.length;
 
     let score = 100;
@@ -329,13 +353,19 @@ function soilWorkabilityScore(forecast: HourlyWeather[]): { score: number; detai
 
 // -- Evapotranspiration Score --
 // Water balance: ET₀ vs expected rainfall
+// Uses real FAO Penman-Monteith ET₀ from Open-Meteo when available
 function etScore(forecast: HourlyWeather[]): { score: number; detail: string; etMm: number } {
-    const temps = forecast.map(h => h.temp);
-    const tMin = Math.min(...temps);
-    const tMax = Math.max(...temps);
-    const tMean = temps.reduce((s, t) => s + t, 0) / temps.length;
-    const et0 = calcET0(tMin, tMax, tMean, 20); // approximate for India
-    const totalRain = forecast.reduce((s, h) => s + (h.rain?.['3h'] || 0), 0);
+    // Prefer real FAO ET₀ from API; sum hourly values to get daily total
+    const hasRealET = forecast.some(h => h.et0 !== undefined && h.et0 > 0);
+    let et0: number;
+    if (hasRealET) {
+        et0 = forecast.reduce((s, h) => s + (h.et0 || 0), 0);
+    } else {
+        // Fallback: Hargreaves approximation
+        const temps = forecast.map(h => h.temp);
+        et0 = calcET0(Math.min(...temps), Math.max(...temps), temps.reduce((s, t) => s + t, 0) / temps.length, 20);
+    }
+    const totalRain = forecast.reduce((s, h) => s + h.rain, 0);
     const waterDeficit = et0 - totalRain;
 
     // Score: irrigation urgency (higher deficit = lower score = more urgent)
@@ -346,7 +376,8 @@ function etScore(forecast: HourlyWeather[]): { score: number; detail: string; et
     else if (waterDeficit < -5) score -= 15; // waterlogging risk
 
     score = Math.max(0, Math.min(100, Math.round(score)));
-    const detail = `ET₀ ≈ ${et0.toFixed(1)}mm/day, rain ${totalRain.toFixed(1)}mm, deficit ${waterDeficit.toFixed(1)}mm`;
+    const src = hasRealET ? 'FAO' : 'est.';
+    const detail = `ET₀ ${src} ${et0.toFixed(1)}mm/day, rain ${totalRain.toFixed(1)}mm, deficit ${waterDeficit.toFixed(1)}mm`;
     return { score, detail, etMm: et0 };
 }
 
@@ -425,7 +456,7 @@ function computeAdvisories(current: CurrentWeather, next8: HourlyWeather[]): Adv
 
     // 1. Irrigation Advisory (ET-based)
     const et = etScore(next8);
-    const totalRain = next8.reduce((sum, h) => sum + (h.rain?.['3h'] || 0), 0);
+    const totalRain = next8.reduce((sum, h) => sum + h.rain, 0);
     const waterDeficit = et.etMm - totalRain;
     if (totalRain > 5 && next8.filter(h => h.pop > 0.5).length >= 2) {
         advisories.push({
@@ -628,57 +659,78 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
     const fetchWeather = useCallback(async () => {
         setLoading(true);
         setError(null);
-        const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-
-        if (!apiKey || apiKey === 'your_api_key_here') {
-            // Use mock data
-            setWeatherData(generateMockData(lat, lng));
-            setUsingMock(true);
-            setLoading(false);
-            return;
-        }
 
         try {
-            // Fetch current weather + 3-hour forecast (free tier, no credit card)
-            const [currentRes, forecastRes] = await Promise.all([
-                fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`),
-                fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`)
-            ]);
-            if (!currentRes.ok || !forecastRes.ok) {
-                throw new Error(`API error: current=${currentRes.status}, forecast=${forecastRes.status}`);
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const currentRaw: any = await currentRes.json();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const forecastRaw: any = await forecastRes.json();
+            // Open-Meteo: free, no API key, hourly data with agriculture-relevant variables
+            const params = new URLSearchParams({
+                latitude: lat.toString(),
+                longitude: lng.toString(),
+                current: [
+                    'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
+                    'weather_code', 'wind_speed_10m', 'uv_index'
+                ].join(','),
+                hourly: [
+                    'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
+                    'precipitation_probability', 'precipitation', 'weather_code',
+                    'wind_speed_10m', 'uv_index', 'dew_point_2m',
+                    'et0_fao_evapotranspiration'
+                ].join(','),
+                timezone: 'auto',
+                forecast_days: '2',
+            });
 
-            // Map 2.5 response to internal types
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+            if (!res.ok) throw new Error(`Open-Meteo API error: ${res.status}`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const raw: any = await res.json();
+
+            // Map current weather
             const current: CurrentWeather = {
-                dt: currentRaw.dt,
-                temp: currentRaw.main.temp,
-                feels_like: currentRaw.main.feels_like,
-                humidity: currentRaw.main.humidity,
-                wind_speed: currentRaw.wind.speed,
-                uvi: 0, // UV not available in free tier
-                weather: currentRaw.weather,
+                dt: Math.floor(new Date(raw.current.time).getTime() / 1000),
+                temp: raw.current.temperature_2m,
+                feels_like: raw.current.apparent_temperature,
+                humidity: raw.current.relative_humidity_2m,
+                wind_speed: raw.current.wind_speed_10m,
+                uvi: raw.current.uv_index ?? 0,
+                weather: [{
+                    id: raw.current.weather_code,
+                    main: wmoDescription(raw.current.weather_code),
+                    description: wmoDescription(raw.current.weather_code),
+                    icon: ''
+                }],
             };
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const hourly: HourlyWeather[] = forecastRaw.list.map((item: any) => ({
-                dt: item.dt,
-                temp: item.main.temp,
-                feels_like: item.main.feels_like,
-                humidity: item.main.humidity,
-                wind_speed: item.wind.speed,
-                pop: item.pop ?? 0,
-                rain: item.rain ? { '3h': item.rain['3h'] || 0 } : undefined,
-                weather: item.weather,
-            }));
 
-            const data: WeatherAPIResponse = { current, hourly };
-            setWeatherData(data);
+            // Map hourly forecast (parallel arrays → array of objects)
+            const times: string[] = raw.hourly.time;
+            const nowIdx = times.findIndex((t: string) => new Date(t) > new Date());
+            const startIdx = Math.max(0, nowIdx);
+
+            const hourly: HourlyWeather[] = times.slice(startIdx, startIdx + 24).map((_: string, i: number) => {
+                const idx = startIdx + i;
+                return {
+                    dt: raw.hourly.time[idx], // ISO string
+                    temp: raw.hourly.temperature_2m[idx],
+                    feels_like: raw.hourly.apparent_temperature[idx],
+                    humidity: raw.hourly.relative_humidity_2m[idx],
+                    wind_speed: raw.hourly.wind_speed_10m[idx],
+                    pop: (raw.hourly.precipitation_probability[idx] ?? 0) / 100,
+                    rain: raw.hourly.precipitation[idx] ?? 0,
+                    weather: [{
+                        id: raw.hourly.weather_code[idx],
+                        main: wmoDescription(raw.hourly.weather_code[idx]),
+                        description: wmoDescription(raw.hourly.weather_code[idx]),
+                        icon: ''
+                    }],
+                    uvi: raw.hourly.uv_index[idx] ?? 0,
+                    dew_point: raw.hourly.dew_point_2m?.[idx],
+                    et0: raw.hourly.et0_fao_evapotranspiration?.[idx],
+                };
+            });
+
+            setWeatherData({ current, hourly });
             setUsingMock(false);
         } catch (err) {
-            console.warn('OpenWeatherMap API failed, using mock data:', err);
+            console.warn('Open-Meteo API failed, using mock data:', err);
             setWeatherData(generateMockData(lat, lng));
             setUsingMock(true);
             setError('Live data unavailable — showing simulated forecast');
@@ -691,7 +743,7 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
         fetchWeather();
     }, [fetchWeather]);
 
-    // Derived: next 8 forecast entries (3-hour intervals = ~24 hours)
+    // Derived: next 8 hourly forecast entries
     const next8Hours = useMemo(() => {
         if (!weatherData) return [];
         return weatherData.hourly.slice(0, 8);
@@ -711,7 +763,7 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
 
     // Total rainfall accumulation
     const totalRainfall = useMemo(() => {
-        return next8Hours.reduce((sum, h) => sum + (h.rain?.['3h'] || 0), 0);
+        return next8Hours.reduce((sum, h) => sum + h.rain, 0);
     }, [next8Hours]);
 
     if (loading) {
@@ -862,10 +914,10 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 </div>
             </div>
 
-            {/* ROW 2: 3-Hour Forecast Timeline */}
+            {/* ROW 2: Hourly Forecast Timeline */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-slate-700">
                 <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-base font-bold text-gray-900 dark:text-white">⏱️ 3-Hour Forecast</h4>
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white">⏱️ Hourly Forecast</h4>
                     <div className="flex items-center gap-2 text-xs">
                         <span className="text-gray-400 dark:text-slate-500">Total Rainfall:</span>
                         <span className={`font-bold px-2 py-0.5 rounded-full ${totalRainfall > 5 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400'}`}>
@@ -903,9 +955,9 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                                     <span className="font-medium">{hour.humidity}%</span>
                                 </div>
                             </div>
-                            {hour.rain && (
+                            {hour.rain > 0 && (
                                 <div className="mt-1.5 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[9px] font-bold">
-                                    🌧 {hour.rain['3h'].toFixed(1)} mm
+                                    🌧 {hour.rain.toFixed(1)} mm
                                 </div>
                             )}
                         </div>
