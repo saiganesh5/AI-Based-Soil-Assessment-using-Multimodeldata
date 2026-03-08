@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -18,8 +18,96 @@ export default function Register(): React.JSX.Element {
     const [strength, setStrength] = useState<number>(0);
     const [strengthText, setStrengthText] = useState<string>('Password strength');
 
+    // Username availability state
+    const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error'>('idle');
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'error' | 'invalid'>('idle');
+    const emailDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { signup } = useAuth();
     const navigate = useNavigate();
+
+    // Debounced username availability check
+    useEffect(() => {
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+
+        if (!username || username.trim().length < 3) {
+            setUsernameStatus('idle');
+            return;
+        }
+
+        setUsernameStatus('checking');
+
+        debounceTimer.current = setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    `http://localhost:8080/auth/register/check-if-username-exists?userName=${encodeURIComponent(username.trim())}`
+                );
+
+                if (!response.ok) {
+                    setUsernameStatus('error');
+                    return;
+                }
+
+                const exists: boolean = await response.json();
+                setUsernameStatus(exists ? 'taken' : 'available');
+            } catch {
+                setUsernameStatus('error');
+            }
+        }, 500);
+
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, [username]);
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    useEffect(() => {
+        if (emailDebounceTimer.current) {
+            clearTimeout(emailDebounceTimer.current);
+        }
+
+        if (!email || email.trim().length < 3) {
+            setEmailStatus('idle');
+            return;
+        }
+
+        if (!emailRegex.test(email.trim())) {
+            setEmailStatus('invalid');
+            return;
+        }
+
+        setEmailStatus('checking');
+
+        emailDebounceTimer.current = setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    `http://localhost:8080/auth/register/check-if-email-exists?mailId=${encodeURIComponent(email.trim())}`
+                );
+
+                if (!response.ok) {
+                    setEmailStatus('error');
+                    return;
+                }
+
+                const exists: boolean = await response.json();
+                setEmailStatus(exists ? 'taken' : 'available');
+            } catch {
+                setEmailStatus('error');
+            }
+        }, 500);
+
+        return () => {
+            if (emailDebounceTimer.current) {
+                clearTimeout(emailDebounceTimer.current);
+            }
+        };
+    }, [email]);
 
     function checkStrength(pass: string): void {
         let s = 0;
@@ -46,6 +134,11 @@ export default function Register(): React.JSX.Element {
 
         if (password !== confirmPassword) {
             setError('Passwords do not match');
+            return;
+        }
+
+        if (usernameStatus === 'taken') {
+            setError('Username is already taken. Please choose another one.');
             return;
         }
 
@@ -96,6 +189,15 @@ export default function Register(): React.JSX.Element {
                         <div>
                             <label htmlFor="username" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Username</label>
                             <input type="text" id="username" placeholder="Choose a unique username" required value={username} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)} className={inputClass} />
+                            {usernameStatus === 'checking' && (
+                                <span className="text-xs text-gray-500 dark:text-slate-400 mt-1 block">Checking availability...</span>
+                            )}
+                            {usernameStatus === 'available' && (
+                                <span className="text-xs text-green-600 dark:text-green-400 mt-1 block font-medium">✓ Username is available</span>
+                            )}
+                            {usernameStatus === 'taken' && (
+                                <span className="text-xs text-red-500 dark:text-red-400 mt-1 block font-medium">✗ Username is already taken!</span>
+                            )}
                         </div>
 
                         <div className="flex gap-4">
@@ -112,6 +214,18 @@ export default function Register(): React.JSX.Element {
                         <div>
                             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1.5">Email Address</label>
                             <input type="email" id="email" placeholder="your.email@example.com" required value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} className={inputClass} />
+                            {emailStatus === 'invalid' && (
+                                <span className="text-xs text-red-500 dark:text-red-400 mt-1 block font-medium">✗ Please enter a valid email address</span>
+                            )}
+                            {emailStatus === 'checking' && (
+                                <span className="text-xs text-gray-500 dark:text-slate-400 mt-1 block">Checking availability...</span>
+                            )}
+                            {emailStatus === 'available' && (
+                                <span className="text-xs text-green-600 dark:text-green-400 mt-1 block font-medium">✓ Email is available</span>
+                            )}
+                            {emailStatus === 'taken' && (
+                                <span className="text-xs text-red-500 dark:text-red-400 mt-1 block font-medium">✗ Email is already registered!</span>
+                            )}
                         </div>
 
                         <div>
