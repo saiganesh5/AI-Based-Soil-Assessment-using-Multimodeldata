@@ -108,8 +108,8 @@ export default function Contact(): React.JSX.Element {
                         <div className="lg:col-span-2 space-y-4">
                             {[
                                 { icon: '📧', title: 'Email', info: 'soilhealth@project.edu', link: 'mailto:soilhealth@project.edu', linkText: 'Send Email →' },
-                                { icon: '📱', title: 'Phone', info: '+91 XXXXX XXXXX', link: 'tel:+91XXXXXXXXXX', linkText: 'Call Us →' },
-                                { icon: '🏫', title: 'University', info: 'Department of Computer Science', sub: 'Final Year Project' },
+                                { icon: '📱', title: 'Phone', info: '+91 9381103596', link: 'tel:+919381103596', linkText: 'Call Us →' },
+                                { icon: '🏫', title: 'Lovely ProfessionalUniversity', info: 'Department of Computer Science', sub: 'Final Year Project' },
                                 { icon: '⏰', title: 'Response Time', info: 'Usually within 24 hours', sub: 'Mon - Fri: 9:00 AM - 6:00 PM' },
                             ].map((item, i) => (
                                 <div key={i} className="card-glass p-6">
