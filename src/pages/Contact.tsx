@@ -107,7 +107,7 @@ export default function Contact(): React.JSX.Element {
                         {/* Contact Info */}
                         <div className="lg:col-span-2 space-y-4">
                             {[
-                                { icon: '📧', title: 'Email', info: 'soilhealth@project.edu', link: 'mailto:soilhealth@project.edu', linkText: 'Send Email →' },
+                                { icon: '📧', title: 'Email', info: 'soilhealthproject.help@gmail.com', link: 'mailto:soilhealthproject.help@gmail.com', linkText: 'Send Email →' },
                                 { icon: '📱', title: 'Phone', info: '+91 9381103596', link: 'tel:+919381103596', linkText: 'Call Us →' },
                                 { icon: '🏫', title: 'Lovely ProfessionalUniversity', info: 'Department of Computer Science', sub: 'Final Year Project' },
                                 { icon: '⏰', title: 'Response Time', info: 'Usually within 24 hours', sub: 'Mon - Fri: 9:00 AM - 6:00 PM' },

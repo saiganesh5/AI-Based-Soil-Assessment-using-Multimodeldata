@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Weather from './pages/Weather';
+import DiseasePrediction from './pages/DiseasePrediction';
 
 // Styles
 import './index.css';
@@ -47,6 +48,14 @@ function App(): React.JSX.Element {
                                 element={
                                     <PrivateRoute>
                                         <Weather />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/predict-disease"
+                                element={
+                                    <PrivateRoute>
+                                        <DiseasePrediction />
                                     </PrivateRoute>
                                 }
                             />

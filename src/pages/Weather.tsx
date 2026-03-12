@@ -163,6 +163,12 @@ export default function Weather(): React.JSX.Element {
                         ← Soil Dashboard
                     </button>
                     <button
+                        className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
+                        onClick={() => navigate('/predict-disease')}
+                    >
+                        🌿 Disease
+                    </button>
+                    <button
                         className="p-2 rounded-full text-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all cursor-pointer border-none bg-transparent"
                         onClick={toggleTheme}
                         aria-label="Toggle theme"

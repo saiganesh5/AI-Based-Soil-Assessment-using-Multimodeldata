@@ -400,12 +400,15 @@ export default function Dashboard(): React.JSX.Element {
             {/* NAVBAR */}
             <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg font-bold">
-                    <span className="text-xl">🌱</span>
-                    <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">AI-Based Soil Health Assessment</span>
+                    <Link to='/' className="flex items-center gap-2 no-underline">
+                        <span className="text-xl">🌱</span>
+                        <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">AI-Based Soil Health Assessment</span>
+                    </Link>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Dashboard</span>
                     <Link to="/weather" className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-underline">🌦️ Weather</Link>
+                    <Link to="/predict-disease" className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors no-underline">🌿 Disease</Link>
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Upload Data</span>
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">History</span>
                     <button
