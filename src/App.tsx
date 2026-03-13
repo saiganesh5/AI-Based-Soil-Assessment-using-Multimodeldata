@@ -9,11 +9,13 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Weather from './pages/Weather';
 import DiseasePrediction from './pages/DiseasePrediction';
+import Profile from './pages/Profile';
 
 // Styles
 import './index.css';
@@ -33,6 +35,7 @@ function App(): React.JSX.Element {
                             {/* Auth Routes */}
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
+                            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
                             {/* Protected Dashboard Route */}
                             <Route
@@ -56,6 +59,14 @@ function App(): React.JSX.Element {
                                 element={
                                     <PrivateRoute>
                                         <DiseasePrediction />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/profile"
+                                element={
+                                    <PrivateRoute>
+                                        <Profile />
                                     </PrivateRoute>
                                 }
                             />

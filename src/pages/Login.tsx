@@ -88,7 +88,7 @@ export default function Login(): React.JSX.Element {
                                 <input type="checkbox" name="remember" className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
                                 <span className="text-sm text-gray-600 dark:text-slate-400">Remember me</span>
                             </label>
-                            <a href="#" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline no-underline">Forgot Password?</a>
+                            <Link to="/auth/forgot-password" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline no-underline">Forgot Password?</Link>
                         </div>
 
                         <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
