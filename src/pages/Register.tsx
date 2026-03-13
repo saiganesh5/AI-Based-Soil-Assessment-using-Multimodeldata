@@ -320,21 +320,18 @@ export default function Register(): React.JSX.Element {
                 {steps.map((s, i) => (
                     <React.Fragment key={s.num}>
                         <div className="flex flex-col items-center gap-1.5">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                                step >= s.num
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${step >= s.num
                                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                                     : 'bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-400'
-                            }`}>
+                                }`}>
                                 {step > s.num ? '✓' : s.num}
                             </div>
-                            <span className={`text-xs font-medium transition-colors ${
-                                step >= s.num ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-slate-500'
-                            }`}>{s.label}</span>
+                            <span className={`text-xs font-medium transition-colors ${step >= s.num ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-slate-500'
+                                }`}>{s.label}</span>
                         </div>
                         {i < steps.length - 1 && (
-                            <div className={`w-16 h-0.5 mb-5 mx-1 rounded-full transition-all duration-300 ${
-                                step > s.num ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-slate-600'
-                            }`} />
+                            <div className={`w-16 h-0.5 mb-5 mx-1 rounded-full transition-all duration-300 ${step > s.num ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-slate-600'
+                                }`} />
                         )}
                     </React.Fragment>
                 ))}
@@ -448,11 +445,10 @@ export default function Register(): React.JSX.Element {
                             {/* OTP countdown timer */}
                             {otpCountdown > 0 ? (
                                 <div className="text-center">
-                                    <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full ${
-                                        otpCountdown <= 60
-                                            ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                                            : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
-                                    }`}>
+                                    <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full ${otpCountdown <= 60
+                                        ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                                        : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+                                        }`}>
                                         ⏱️ OTP expires in {formatTime(otpCountdown)}
                                     </span>
                                 </div>
@@ -479,11 +475,10 @@ export default function Register(): React.JSX.Element {
                                                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
                                                 onPaste={handleOtpPaste}
                                                 autoFocus={i === 0}
-                                                className={`w-12 h-14 rounded-xl border-2 bg-gray-50 dark:bg-slate-700 text-center text-lg outline-none transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:focus:border-emerald-400 caret-transparent ${
-                                                    digit
-                                                        ? 'border-emerald-400 dark:border-emerald-500 text-transparent selection:bg-transparent'
-                                                        : 'border-gray-200 dark:border-slate-600 text-transparent'
-                                                }`}
+                                                className={`w-12 h-14 rounded-xl border-2 bg-gray-50 dark:bg-slate-700 text-center text-lg outline-none transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:focus:border-emerald-400 caret-transparent ${digit
+                                                    ? 'border-emerald-400 dark:border-emerald-500 text-transparent selection:bg-transparent'
+                                                    : 'border-gray-200 dark:border-slate-600 text-transparent'
+                                                    }`}
                                             />
                                             {/* Emerald dot when digit is filled */}
                                             {digit && (
@@ -522,11 +517,10 @@ export default function Register(): React.JSX.Element {
                                     type="button"
                                     onClick={handleResendOtp}
                                     disabled={resendCooldown > 0 || otpSending}
-                                    className={`text-sm bg-transparent border-none cursor-pointer transition-colors ${
-                                        resendCooldown > 0
-                                            ? 'text-gray-400 dark:text-slate-500 cursor-not-allowed'
-                                            : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium'
-                                    }`}
+                                    className={`text-sm bg-transparent border-none cursor-pointer transition-colors ${resendCooldown > 0
+                                        ? 'text-gray-400 dark:text-slate-500 cursor-not-allowed'
+                                        : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium'
+                                        }`}
                                 >
                                     {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                                 </button>
