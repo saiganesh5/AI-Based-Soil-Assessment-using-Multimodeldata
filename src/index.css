@@ -82,4 +82,88 @@
            border border-white/20 dark:border-slate-700/30
            rounded-2xl shadow-lg;
   }
+
+  /* ========== WEATHER PAGE ========== */
+
+  /* Sky gradient background */
+  .weather-bg {
+    background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 35%, #f8fafc 100%);
+    min-height: 100vh;
+  }
+  .dark .weather-bg {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  }
+
+  /* Bento card with hover lift */
+  .bento-card {
+    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-md
+           border border-gray-100 dark:border-slate-700/60
+           transition-all duration-300 ease-out;
+  }
+  .bento-card:hover {
+    @apply shadow-xl -translate-y-0.5;
+  }
+
+  /* Horizontal snap scroll */
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-snap-x > * {
+    scroll-snap-align: start;
+  }
+
+  /* Thin horizontal scrollbar */
+  .scroll-thin-x::-webkit-scrollbar {
+    height: 4px;
+  }
+  .scroll-thin-x::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .scroll-thin-x::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 dark:bg-slate-700 rounded-full;
+  }
+  .scroll-thin-x::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-300 dark:bg-slate-600;
+  }
+}
+
+/* ==========================================
+   UTILITY LAYER — Weather animations
+   ========================================== */
+@layer utilities {
+  /* Staggered fade-in */
+  @keyframes weatherFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .weather-fade-in {
+    animation: weatherFadeIn 0.5s ease-out both;
+  }
+  .weather-fade-in-1 { animation-delay: 0.05s; }
+  .weather-fade-in-2 { animation-delay: 0.10s; }
+  .weather-fade-in-3 { animation-delay: 0.15s; }
+  .weather-fade-in-4 { animation-delay: 0.20s; }
+  .weather-fade-in-5 { animation-delay: 0.25s; }
+  .weather-fade-in-6 { animation-delay: 0.30s; }
+  .weather-fade-in-7 { animation-delay: 0.35s; }
+  .weather-fade-in-8 { animation-delay: 0.40s; }
+
+  /* Floating animation for weather emoji */
+  @keyframes weatherFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  .weather-float {
+    animation: weatherFloat 3s ease-in-out infinite;
+  }
+
+  /* Sun arc glow pulse */
+  @keyframes sunGlow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(250,204,21,0.4)); }
+    50%      { filter: drop-shadow(0 0 14px rgba(250,204,21,0.7)); }
+  }
+  .sun-glow {
+    animation: sunGlow 2.5s ease-in-out infinite;
+  }
 }

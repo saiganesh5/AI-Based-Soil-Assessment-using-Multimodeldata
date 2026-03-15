@@ -34,6 +34,17 @@ interface LocationResult {
     display_name: string;
 }
 
+/* Quick-city shortcuts */
+const QUICK_CITIES = [
+    { name: 'Delhi', lat: 28.6139, lng: 77.209 },
+    { name: 'Mumbai', lat: 19.076, lng: 72.8777 },
+    { name: 'Kolkata', lat: 22.5726, lng: 88.3639 },
+    { name: 'Chennai', lat: 13.0827, lng: 80.2707 },
+    { name: 'Bengaluru', lat: 12.9716, lng: 77.5946 },
+    { name: 'Hyderabad', lat: 17.385, lng: 78.4867 },
+    { name: 'Phagwara', lat: 31.224, lng: 75.7708 },
+];
+
 /* ===============================
    WEATHER PAGE
 ================================ */
@@ -48,6 +59,7 @@ export default function Weather(): React.JSX.Element {
     const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
     const [searching, setSearching] = useState<boolean>(false);
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+    const [showMap, setShowMap] = useState<boolean>(false);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchBoxRef = useRef<HTMLDivElement>(null);
@@ -103,12 +115,18 @@ export default function Weather(): React.JSX.Element {
     // Select a suggestion
     const handleSelectLocation = useCallback((result: LocationResult) => {
         setCoords({ lat: result.lat, lng: result.lng });
-        // Shorten display name (take first 2-3 parts)
         const parts = result.display_name.split(', ');
         setLocationName(parts.slice(0, 3).join(', '));
         setSearchQuery(parts.slice(0, 2).join(', '));
         setSuggestions([]);
         setShowSuggestions(false);
+    }, []);
+
+    // Quick city select
+    const handleQuickCity = useCallback((city: typeof QUICK_CITIES[0]) => {
+        setCoords({ lat: city.lat, lng: city.lng });
+        setLocationName(city.name);
+        setSearchQuery(city.name);
     }, []);
 
     // "Use My Location" via browser geolocation
@@ -119,7 +137,6 @@ export default function Weather(): React.JSX.Element {
             (pos) => {
                 const { latitude: lat, longitude: lng } = pos.coords;
                 setCoords({ lat, lng });
-                // Reverse geocode for display name
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'en' } })
                     .then(r => r.json())
                     .then((data: { display_name?: string; address?: { city?: string; state_district?: string; county?: string; state?: string } }) => {
@@ -148,44 +165,67 @@ export default function Weather(): React.JSX.Element {
     }, [logout, navigate]);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-slate-900 transition-colors">
-            {/* NAVBAR */}
-            <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-lg font-bold">
-                    <span className="text-xl">🌦️</span>
-                    <span className="bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent">Agriculture Weather Forecast</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                    <button
-                        className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
-                        onClick={() => navigate('/dashboard')}
-                    >
-                        ← Soil Dashboard
-                    </button>
-                    <button
-                        className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
-                        onClick={() => navigate('/predict-disease')}
-                    >
-                        🌿 Disease
-                    </button>
-                    <button
-                        className="p-2 rounded-full text-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all cursor-pointer border-none bg-transparent"
-                        onClick={toggleTheme}
-                        aria-label="Toggle theme"
-                        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                    >
-                        {theme === 'light' ? '🌙' : '☀️'}
-                    </button>
-                    <button className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleLogout}>🚪 Logout</button>
+        <div className="weather-bg transition-colors">
+            {/* ─── STICKY NAVBAR ─── */}
+            <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-slate-700/60 px-6 py-3">
+                <div className="max-w-7xl mx-auto flex items-center justify-between">
+                    {/* Brand */}
+                    <div className="flex items-center gap-2 text-lg font-bold">
+                        <span className="text-xl">🌦️</span>
+                        <span className="bg-gradient-to-r from-sky-500 to-indigo-500 bg-clip-text text-transparent hidden sm:inline">
+                            Agriculture Weather
+                        </span>
+                    </div>
+
+                    {/* Quick City Pills */}
+                    <div className="hidden lg:flex items-center gap-1.5 overflow-x-auto scroll-thin-x">
+                        {QUICK_CITIES.map((city) => (
+                            <button
+                                key={city.name}
+                                onClick={() => handleQuickCity(city)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border-none cursor-pointer transition-all whitespace-nowrap
+                                    ${locationName === city.name
+                                        ? 'bg-sky-500 text-white shadow-md'
+                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-sky-100 dark:hover:bg-sky-900/30 hover:text-sky-600 dark:hover:text-sky-400'
+                                    }`}
+                            >
+                                {city.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center gap-2 text-sm">
+                        <button
+                            className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
+                            onClick={() => navigate('/dashboard')}
+                        >
+                            ← Dashboard
+                        </button>
+                        <button
+                            className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
+                            onClick={() => navigate('/predict-disease')}
+                        >
+                            🌿 Disease
+                        </button>
+                        <button
+                            className="p-2 rounded-full text-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all cursor-pointer border-none bg-transparent"
+                            onClick={toggleTheme}
+                            aria-label="Toggle theme"
+                            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                        >
+                            {theme === 'light' ? '🌙' : '☀️'}
+                        </button>
+                        <button className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleLogout}>🚪</button>
+                    </div>
                 </div>
             </div>
 
-            {/* LOCATION SEARCH BAR */}
-            <div className="container py-6">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-slate-700 mb-6">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        📍 Search Your Farm Location
-                    </h2>
+            {/* ─── MAIN CONTENT ─── */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+
+                {/* ─── SEARCH BAR ─── */}
+                <div className="bento-card p-4 sm:p-5 mb-5 weather-fade-in">
                     <div className="flex flex-col sm:flex-row gap-3">
                         {/* Search Input with Suggestions */}
                         <div className="relative flex-1" ref={searchBoxRef}>
@@ -193,18 +233,18 @@ export default function Weather(): React.JSX.Element {
                                 <input
                                     type="text"
                                     id="locationSearch"
-                                    placeholder="Search city, district, or village... (e.g. Hyderabad, Nashik)"
+                                    placeholder="Search city, district, or village…"
                                     value={searchQuery}
                                     onChange={(e) => handleSearchChange(e.target.value)}
                                     onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-slate-500"
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/60 text-gray-800 dark:text-white text-sm outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-slate-500"
                                 />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 text-base">
                                     🔍
                                 </span>
                                 {searching && (
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500 animate-pulse">
-                                        Searching...
+                                        Searching…
                                     </span>
                                 )}
                             </div>
@@ -231,21 +271,33 @@ export default function Weather(): React.JSX.Element {
                             )}
                         </div>
 
-                        {/* Use My Location Button */}
-                        <button
-                            className="px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold border-none cursor-pointer transition-colors shadow-md whitespace-nowrap flex items-center gap-2"
-                            onClick={handleUseMyLocation}
-                            disabled={searching}
-                        >
-                            📍 Use My Location
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                            <button
+                                className="px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold border-none cursor-pointer transition-all shadow-md whitespace-nowrap flex items-center gap-2 hover:-translate-y-0.5"
+                                onClick={handleUseMyLocation}
+                                disabled={searching}
+                            >
+                                📍 My Location
+                            </button>
+                            <button
+                                className={`px-3 py-3 rounded-xl text-sm font-medium border-none cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5
+                                    ${showMap
+                                        ? 'bg-indigo-500 text-white shadow-md'
+                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
+                                    }`}
+                                onClick={() => setShowMap(!showMap)}
+                            >
+                                🗺️ {showMap ? 'Hide Map' : 'Map'}
+                            </button>
+                        </div>
                     </div>
 
                     {/* Selected Location Info */}
                     {locationName && (
                         <div className="mt-3 flex items-center gap-2 text-sm">
-                            <span className="text-gray-500 dark:text-slate-400">Showing weather for:</span>
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{locationName}</span>
+                            <span className="text-gray-400 dark:text-slate-500">📍</span>
+                            <span className="font-semibold text-sky-600 dark:text-sky-400">{locationName}</span>
                             {coords && (
                                 <span className="text-[10px] text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
                                     {coords.lat.toFixed(2)}°N, {coords.lng.toFixed(2)}°E
@@ -255,42 +307,42 @@ export default function Weather(): React.JSX.Element {
                     )}
                 </div>
 
-                {/* LOCATION MAP */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden mb-6">
-                    <MapContainer
-                        center={[coords?.lat ?? 20.5937, coords?.lng ?? 78.9629]}
-                        zoom={coords ? 10 : 5}
-                        style={{ height: '260px', width: '100%' }}
-                        scrollWheelZoom={false}
-                        zoomControl={true}
-                    >
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-                        />
-                        {coords && (
-                            <>
-                                <MapUpdater lat={coords.lat} lng={coords.lng} />
-                                <Marker position={[coords.lat, coords.lng]}>
-                                    <Popup>
-                                        <strong>{locationName || 'Selected Location'}</strong>
-                                        <br />
-                                        {coords.lat.toFixed(4)}°N, {coords.lng.toFixed(4)}°E
-                                    </Popup>
-                                </Marker>
-                            </>
-                        )}
-                    </MapContainer>
-                </div>
+                {/* ─── MAP (toggleable) ─── */}
+                {showMap && (
+                    <div className="bento-card overflow-hidden mb-5 weather-fade-in" style={{ height: '240px' }}>
+                        <MapContainer
+                            center={[coords?.lat ?? 20.5937, coords?.lng ?? 78.9629]}
+                            zoom={coords ? 10 : 5}
+                            style={{ height: '100%', width: '100%' }}
+                            scrollWheelZoom={false}
+                            zoomControl={true}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+                            />
+                            {coords && (
+                                <>
+                                    <MapUpdater lat={coords.lat} lng={coords.lng} />
+                                    <Marker position={[coords.lat, coords.lng]}>
+                                        <Popup>
+                                            <strong>{locationName || 'Selected Location'}</strong>
+                                            <br />
+                                            {coords.lat.toFixed(4)}°N, {coords.lng.toFixed(4)}°E
+                                        </Popup>
+                                    </Marker>
+                                </>
+                            )}
+                        </MapContainer>
+                    </div>
+                )}
 
-                {/* WEATHER DASHBOARD */}
-                <div className="grid grid-cols-1 lg:grid-cols-2">
-                    <WeatherDashboard
-                        lat={coords?.lat ?? 20.5937}
-                        lng={coords?.lng ?? 78.9629}
-                        locationName={locationName || undefined}
-                    />
-                </div>
+                {/* ─── WEATHER DASHBOARD ─── */}
+                <WeatherDashboard
+                    lat={coords?.lat ?? 20.5937}
+                    lng={coords?.lng ?? 78.9629}
+                    locationName={locationName || undefined}
+                />
             </div>
         </div>
     );

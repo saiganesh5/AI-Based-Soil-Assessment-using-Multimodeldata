@@ -24,12 +24,21 @@ interface CurrentWeather {
     humidity: number;
     wind_speed: number;
     uvi: number;
+    pressure: number;
+    visibility: number;
     weather: { id: number; main: string; description: string; icon: string }[];
+}
+
+interface DailyWeather {
+    sunrise: string;
+    sunset: string;
+    uv_index_max: number;
 }
 
 interface WeatherAPIResponse {
     current: CurrentWeather;
     hourly: HourlyWeather[];
+    daily?: DailyWeather;
 }
 
 interface WeatherDashboardProps {
@@ -62,6 +71,8 @@ function generateMockData(lat: number, _lng: number): WeatherAPIResponse {
         humidity: baseHumidity,
         wind_speed: 2 + Math.random() * 8,
         uvi: 4 + Math.random() * 6,
+        pressure: 1010 + Math.random() * 15,
+        visibility: 8 + Math.random() * 12,
         weather: [{ id: 2, main: 'Clouds', description: 'partly cloudy', icon: '03d' }]
     };
 
@@ -667,14 +678,16 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 longitude: lng.toString(),
                 current: [
                     'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
-                    'weather_code', 'wind_speed_10m', 'uv_index'
+                    'weather_code', 'wind_speed_10m', 'uv_index',
+                    'pressure_msl'
                 ].join(','),
                 hourly: [
                     'temperature_2m', 'relative_humidity_2m', 'apparent_temperature',
                     'precipitation_probability', 'precipitation', 'weather_code',
                     'wind_speed_10m', 'uv_index', 'dew_point_2m',
-                    'et0_fao_evapotranspiration'
+                    'et0_fao_evapotranspiration', 'visibility'
                 ].join(','),
+                daily: 'sunrise,sunset,uv_index_max',
                 timezone: 'auto',
                 forecast_days: '2',
             });
@@ -692,6 +705,8 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 humidity: raw.current.relative_humidity_2m,
                 wind_speed: raw.current.wind_speed_10m,
                 uvi: raw.current.uv_index ?? 0,
+                pressure: raw.current.pressure_msl ?? 1013,
+                visibility: (raw.hourly?.visibility?.[0] ?? 10000) / 1000,
                 weather: [{
                     id: raw.current.weather_code,
                     main: wmoDescription(raw.current.weather_code),
@@ -699,6 +714,13 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                     icon: ''
                 }],
             };
+
+            // Parse daily data
+            const daily: DailyWeather | undefined = raw.daily ? {
+                sunrise: raw.daily.sunrise[0],
+                sunset: raw.daily.sunset[0],
+                uv_index_max: raw.daily.uv_index_max?.[0] ?? 0,
+            } : undefined;
 
             // Map hourly forecast (parallel arrays → array of objects)
             const times: string[] = raw.hourly.time;
@@ -727,7 +749,7 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 };
             });
 
-            setWeatherData({ current, hourly });
+            setWeatherData({ current, hourly, daily });
             setUsingMock(false);
         } catch (err) {
             console.warn('Open-Meteo API failed, using mock data:', err);
@@ -766,19 +788,51 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
         return next8Hours.reduce((sum, h) => sum + h.rain, 0);
     }, [next8Hours]);
 
+    /* ─── Sun position helper ─── */
+    const sunProgress = useMemo(() => {
+        if (!weatherData?.daily) return 0.5;
+        const now = Date.now();
+        const rise = new Date(weatherData.daily.sunrise).getTime();
+        const set = new Date(weatherData.daily.sunset).getTime();
+        if (now < rise) return 0;
+        if (now > set) return 1;
+        return (now - rise) / (set - rise);
+    }, [weatherData]);
+
+    const formatTime = (iso: string) =>
+        new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    /* ─── LOADING SKELETON ─── */
     if (loading) {
         return (
-            <div className="col-span-1 lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-slate-700">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded-lg w-1/3"></div>
-                    <div className="flex gap-3 overflow-hidden">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="w-28 h-32 bg-gray-200 dark:bg-slate-700 rounded-xl flex-shrink-0"></div>
-                        ))}
+            <div className="space-y-5">
+                {/* Hero skeleton */}
+                <div className="bento-card p-6 animate-pulse">
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-3">
+                            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-32" />
+                            <div className="h-14 bg-gray-200 dark:bg-slate-700 rounded w-40" />
+                            <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-56" />
+                        </div>
+                        <div className="w-20 h-20 bg-gray-200 dark:bg-slate-700 rounded-full" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded-xl"></div>
-                        <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded-xl"></div>
+                </div>
+                {/* Cards skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="bento-card p-4 h-36 animate-pulse">
+                            <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-20 mb-3" />
+                            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-16" />
+                        </div>
+                    ))}
+                </div>
+                {/* Hourly skeleton */}
+                <div className="bento-card p-5 animate-pulse">
+                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-40 mb-4" />
+                    <div className="flex gap-3 overflow-hidden">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="w-24 h-28 bg-gray-200 dark:bg-slate-700 rounded-xl flex-shrink-0" />
+                        ))}
                     </div>
                 </div>
             </div>
@@ -788,114 +842,386 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
     if (!weatherData) return <></>;
 
     const cur = weatherData.current;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    /* ─── UV level helper ─── */
+    const uvLabel = (uv: number) => {
+        if (uv <= 2) return { text: 'Low', color: '#22c55e' };
+        if (uv <= 5) return { text: 'Moderate', color: '#f59e0b' };
+        if (uv <= 7) return { text: 'High', color: '#f97316' };
+        if (uv <= 10) return { text: 'Very High', color: '#ef4444' };
+        return { text: 'Extreme', color: '#7c3aed' };
+    };
+    const uvInfo = uvLabel(cur.uvi);
+
+    /* ─── Pressure category ─── */
+    const pressureLabel = (p: number) => {
+        if (p < 1000) return 'Low';
+        if (p < 1020) return 'Normal';
+        return 'High';
+    };
 
     return (
-        <div className="col-span-1 lg:col-span-2 space-y-5">
-            {/* HEADER */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="space-y-5">
+            {/* ─── HEADER ROW ─── */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 weather-fade-in">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 m-0">
                         <span className="text-2xl">🌦️</span>
-                        Agriculture Weather Forecast
+                        Agriculture Weather
                     </h3>
                     {locationName && (
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">📍 {locationName}</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5 m-0">📍 {locationName}</p>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
                     {usingMock && (
                         <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase">
-                            Simulated Data
+                            Simulated
                         </span>
                     )}
-                    {error && (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400">{error}</span>
-                    )}
+                    {error && <span className="text-[10px] text-amber-600 dark:text-amber-400">{error}</span>}
                     <button
                         onClick={fetchWeather}
                         className="p-2 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-slate-300 border-none cursor-pointer transition-all text-sm"
                         title="Refresh weather"
-                    >
-                        🔄
-                    </button>
+                    >🔄</button>
                 </div>
             </div>
 
-            {/* ROW 1: Current Weather + Field Work Score */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Current Weather */}
-                <div className="md:col-span-2 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
-                    {/* Decorative circles */}
-                    <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10"></div>
-                    <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5"></div>
+            {/* ═══════════════════════════════════════════
+                SECTION 1: HERO — Current Weather
+            ═══════════════════════════════════════════ */}
+            <div className="bento-card bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 p-6 sm:p-8 text-white relative overflow-hidden weather-fade-in weather-fade-in-1">
+                {/* Decorative */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10" />
+                <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/5" />
+                <div className="absolute top-1/2 right-1/4 w-64 h-64 rounded-full bg-white/5 -translate-y-1/2" />
 
-                    <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="relative z-10">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <div className="text-xs uppercase tracking-wider text-white/70 mb-1">Current Weather</div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-5xl font-black">{cur.temp.toFixed(0)}°</span>
-                                <span className="text-lg opacity-80">C</span>
+                            <div className="text-xs uppercase tracking-widest text-white/60 mb-1">{dateStr}</div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-7xl sm:text-8xl font-black tracking-tighter">{cur.temp.toFixed(0)}°</span>
                             </div>
-                            <div className="text-sm text-white/80 mt-1">
-                                Feels like {cur.feels_like.toFixed(0)}°C · {cur.weather[0]?.description}
+                            <div className="text-sm text-white/80 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <span>Feels like {cur.feels_like.toFixed(0)}°C</span>
+                                <span className="w-1 h-1 rounded-full bg-white/40" />
+                                <span className="capitalize">{cur.weather[0]?.description}</span>
+                                <span className="w-1 h-1 rounded-full bg-white/40" />
+                                <span>{timeStr}</span>
                             </div>
                         </div>
-                        <div className="text-6xl drop-shadow-lg">
+                        <div className="text-7xl sm:text-8xl weather-float drop-shadow-2xl">
                             {getWeatherEmoji(cur.weather[0]?.id || 800)}
                         </div>
                     </div>
 
-                    <div className="relative z-10 grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-white/20">
-                        <div>
-                            <div className="text-[10px] uppercase text-white/60 tracking-wider">Humidity</div>
-                            <div className="text-lg font-bold">{cur.humidity}%</div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] uppercase text-white/60 tracking-wider">Wind</div>
-                            <div className="text-lg font-bold">{cur.wind_speed.toFixed(1)} <span className="text-xs font-normal">km/h</span></div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] uppercase text-white/60 tracking-wider">UV Index</div>
-                            <div className="text-lg font-bold">{cur.uvi.toFixed(1)}</div>
+                    {/* Mini stats row */}
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-6 pt-5 border-t border-white/15">
+                        {[
+                            { label: 'Humidity', value: `${cur.humidity}%`, icon: '💧' },
+                            { label: 'Wind', value: `${cur.wind_speed.toFixed(1)} km/h`, icon: '💨' },
+                            { label: 'UV Index', value: cur.uvi.toFixed(1), icon: '☀️' },
+                            { label: 'Pressure', value: `${cur.pressure.toFixed(0)} hPa`, icon: '🌡️' },
+                            { label: 'Visibility', value: `${cur.visibility.toFixed(0)} km`, icon: '👁️' },
+                            { label: 'Dew Point', value: `${calcDewPoint(cur.temp, cur.humidity).toFixed(0)}°C`, icon: '🌫️' },
+                        ].map((s, i) => (
+                            <div key={i}>
+                                <div className="text-[10px] uppercase text-white/50 tracking-wider">{s.icon} {s.label}</div>
+                                <div className="text-base sm:text-lg font-bold mt-0.5">{s.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════
+                SECTION 2: WEATHER DETAIL BENTO GRID
+            ═══════════════════════════════════════════ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Humidity Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-2">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">💧 Humidity</div>
+                    <div className="flex items-center justify-center mb-2">
+                        <svg width="80" height="48" viewBox="0 0 80 48">
+                            <path d="M 8 44 A 32 32 0 0 1 72 44" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" className="text-gray-200 dark:text-slate-700" />
+                            <path d="M 8 44 A 32 32 0 0 1 72 44" fill="none" stroke="url(#humGrad)" strokeWidth="6" strokeLinecap="round"
+                                strokeDasharray={`${cur.humidity * 1.005} 100.5`} />
+                            <defs>
+                                <linearGradient id="humGrad" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stopColor="#38bdf8" />
+                                    <stop offset="100%" stopColor="#6366f1" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div className="text-center">
+                        <span className="text-2xl font-black text-gray-900 dark:text-white">{cur.humidity}%</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                            {cur.humidity > 80 ? 'High moisture' : cur.humidity > 50 ? 'Comfortable' : 'Dry air'}
                         </div>
                     </div>
                 </div>
 
-                {/* Field Work Score — Expanded with Factor Breakdown */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-slate-700">
-                    <div className="flex items-center gap-4 mb-4">
-                        {/* Gauge */}
-                        <div className="relative w-20 h-20 flex-shrink-0">
-                            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-slate-700" />
-                                <circle cx="50" cy="50" r="42" stroke={scoreColor(fieldScoreResult.overall)} strokeWidth="8" fill="none"
+                {/* Wind Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-3">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">💨 Wind</div>
+                    <div className="flex items-center justify-center mb-2">
+                        <svg width="60" height="60" viewBox="0 0 60 60">
+                            <circle cx="30" cy="30" r="24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-200 dark:text-slate-700" />
+                            {/* Cardinal directions */}
+                            <text x="30" y="10" textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-400 dark:text-slate-500 font-bold">N</text>
+                            <text x="54" y="33" textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-400 dark:text-slate-500">E</text>
+                            <text x="30" y="56" textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-400 dark:text-slate-500">S</text>
+                            <text x="6" y="33" textAnchor="middle" fontSize="8" fill="currentColor" className="text-gray-400 dark:text-slate-500">W</text>
+                            {/* Wind arrow */}
+                            <circle cx="30" cy="30" r="4" fill="#38bdf8" />
+                        </svg>
+                    </div>
+                    <div className="text-center">
+                        <span className="text-2xl font-black text-gray-900 dark:text-white">{cur.wind_speed.toFixed(1)}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400 ml-1">km/h</span>
+                    </div>
+                </div>
+
+                {/* UV Index Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-4">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">☀️ UV Index</div>
+                    <div className="text-center mb-2">
+                        <span className="text-3xl font-black" style={{ color: uvInfo.color }}>{cur.uvi.toFixed(1)}</span>
+                    </div>
+                    {/* UV gradient bar */}
+                    <div className="relative h-2 rounded-full overflow-hidden bg-gradient-to-r from-green-400 via-yellow-400 via-orange-400 to-red-500 to-purple-600">
+                        <div
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 shadow-md transition-all duration-500"
+                            style={{ left: `${Math.min(cur.uvi / 11 * 100, 100)}%`, borderColor: uvInfo.color }}
+                        />
+                    </div>
+                    <div className="text-[10px] text-center mt-1.5 font-semibold" style={{ color: uvInfo.color }}>{uvInfo.text}</div>
+                </div>
+
+                {/* Pressure Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-5">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">🌡️ Pressure</div>
+                    <div className="flex items-center justify-center mb-2">
+                        <svg width="80" height="48" viewBox="0 0 80 48">
+                            <path d="M 8 44 A 32 32 0 0 1 72 44" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" className="text-gray-200 dark:text-slate-700" />
+                            <path d="M 8 44 A 32 32 0 0 1 72 44" fill="none" stroke="#8b5cf6" strokeWidth="6" strokeLinecap="round"
+                                strokeDasharray={`${Math.min(((cur.pressure - 980) / 50) * 100.5, 100.5)} 100.5`} />
+                        </svg>
+                    </div>
+                    <div className="text-center">
+                        <span className="text-2xl font-black text-gray-900 dark:text-white">{cur.pressure.toFixed(0)}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400 ml-1">hPa</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{pressureLabel(cur.pressure)}</div>
+                    </div>
+                </div>
+
+                {/* Dew Point Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-6">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">🌫️ Dew Point</div>
+                    <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{calcDewPoint(cur.temp, cur.humidity).toFixed(0)}°</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                            Spread: {(cur.temp - calcDewPoint(cur.temp, cur.humidity)).toFixed(0)}°C
+                        </div>
+                    </div>
+                </div>
+
+                {/* Feels Like Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-7">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">🤒 Feels Like</div>
+                    <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{cur.feels_like.toFixed(0)}°</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                            {cur.feels_like > cur.temp ? `${(cur.feels_like - cur.temp).toFixed(0)}° warmer` : cur.feels_like < cur.temp ? `${(cur.temp - cur.feels_like).toFixed(0)}° cooler` : 'Same as actual'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Visibility Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-8">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">👁️ Visibility</div>
+                    <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{cur.visibility.toFixed(0)}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">km</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                            {cur.visibility > 10 ? 'Clear' : cur.visibility > 4 ? 'Moderate' : 'Poor'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Precipitation Card */}
+                <div className="bento-card p-4 weather-fade-in weather-fade-in-8">
+                    <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-2">🌧️ Precipitation</div>
+                    <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{totalRainfall.toFixed(1)}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">mm (8h total)</span>
+                        <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                            {next8Hours.filter(h => h.pop > 0.5).length} of 8 hrs rainy
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════
+                SECTION 3: HOURLY FORECAST CAROUSEL
+            ═══════════════════════════════════════════ */}
+            <div className="bento-card p-5 weather-fade-in weather-fade-in-2">
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white m-0">⏱️ Hourly Forecast</h4>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${totalRainfall > 5 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400'}`}>
+                        {totalRainfall.toFixed(1)} mm total
+                    </span>
+                </div>
+
+                <div className="flex gap-3 overflow-x-auto pb-2 scroll-snap-x scroll-thin-x">
+                    {next8Hours.map((hour, idx) => (
+                        <div
+                            key={idx}
+                            className="flex-shrink-0 w-[105px] bg-gray-50 dark:bg-slate-700/40 rounded-xl p-3 text-center border border-gray-100 dark:border-slate-600/50 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-default group"
+                        >
+                            <div className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase">
+                                {formatHour(hour.dt)}
+                            </div>
+                            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">
+                                {getWeatherEmoji(hour.weather[0]?.id || 800)}
+                            </div>
+                            <div className="text-lg font-bold text-gray-900 dark:text-white">
+                                {hour.temp.toFixed(0)}°
+                            </div>
+                            <div className="mt-2 space-y-1 text-[10px] text-gray-500 dark:text-slate-400">
+                                <div className="flex justify-between"><span>💧</span><span className="font-medium">{Math.round(hour.pop * 100)}%</span></div>
+                                <div className="flex justify-between"><span>💨</span><span className="font-medium">{hour.wind_speed.toFixed(0)}</span></div>
+                            </div>
+                            {hour.rain > 0 && (
+                                <div className="mt-1.5 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[9px] font-bold">
+                                    🌧 {hour.rain.toFixed(1)}mm
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════
+                SECTION 4: SUN & MOON
+            ═══════════════════════════════════════════ */}
+            {weatherData.daily && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 weather-fade-in weather-fade-in-3">
+                    {/* Sun Card */}
+                    <div className="bento-card p-5">
+                        <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-3">☀️ Sunrise & Sunset</div>
+                        <div className="flex items-center justify-center mb-3">
+                            <svg width="200" height="90" viewBox="0 0 200 90">
+                                {/* Horizon line */}
+                                <line x1="10" y1="80" x2="190" y2="80" stroke="currentColor" strokeWidth="1" className="text-gray-200 dark:text-slate-700" />
+                                {/* Arc path */}
+                                <path d="M 20 80 Q 100 -10 180 80" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-gray-300 dark:text-slate-600" />
+                                {/* Sun progress arc */}
+                                <path d="M 20 80 Q 100 -10 180 80" fill="none" stroke="url(#sunArcGrad)" strokeWidth="3" strokeLinecap="round"
+                                    strokeDasharray={`${sunProgress * 224} 224`} />
+                                {/* Sun dot */}
+                                {sunProgress > 0 && sunProgress < 1 && (
+                                    <circle
+                                        cx={20 + sunProgress * 160}
+                                        cy={80 - Math.sin(sunProgress * Math.PI) * 90}
+                                        r="8" fill="#fbbf24" className="sun-glow"
+                                    />
+                                )}
+                                <defs>
+                                    <linearGradient id="sunArcGrad" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#fb923c" />
+                                        <stop offset="50%" stopColor="#fbbf24" />
+                                        <stop offset="100%" stopColor="#fb923c" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <div>
+                                <div className="text-[10px] text-gray-400 dark:text-slate-500 uppercase">Sunrise</div>
+                                <div className="font-bold text-gray-900 dark:text-white">{formatTime(weatherData.daily.sunrise)}</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[10px] text-gray-400 dark:text-slate-500 uppercase">UV Max</div>
+                                <div className="font-bold" style={{ color: uvLabel(weatherData.daily.uv_index_max).color }}>
+                                    {weatherData.daily.uv_index_max.toFixed(1)}
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-gray-400 dark:text-slate-500 uppercase">Sunset</div>
+                                <div className="font-bold text-gray-900 dark:text-white">{formatTime(weatherData.daily.sunset)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Moon Card */}
+                    <div className="bento-card p-5">
+                        <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold mb-3">🌙 Moon Phase</div>
+                        <div className="flex flex-col items-center justify-center flex-1 py-4">
+                            {/* Moon phase calculation (simplified — based on synodic month) */}
+                            {(() => {
+                                const daysSinceNew = ((Date.now() / 86400000) - 10.5) % 29.53;
+                                const phase = daysSinceNew / 29.53;
+                                const emoji = phase < 0.125 ? '🌑' : phase < 0.25 ? '🌒' : phase < 0.375 ? '🌓' : phase < 0.5 ? '🌔' : phase < 0.625 ? '🌕' : phase < 0.75 ? '🌖' : phase < 0.875 ? '🌗' : '🌘';
+                                const name = phase < 0.125 ? 'New Moon' : phase < 0.25 ? 'Waxing Crescent' : phase < 0.375 ? 'First Quarter' : phase < 0.5 ? 'Waxing Gibbous' : phase < 0.625 ? 'Full Moon' : phase < 0.75 ? 'Waning Gibbous' : phase < 0.875 ? 'Last Quarter' : 'Waning Crescent';
+                                const illumination = Math.round(phase < 0.5 ? phase * 2 * 100 : (1 - (phase - 0.5) * 2) * 100);
+                                return (
+                                    <>
+                                        <span className="text-5xl mb-2">{emoji}</span>
+                                        <span className="text-sm font-bold text-gray-900 dark:text-white">{name}</span>
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{illumination}% illuminated</span>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                SECTION 5: FIELD WORK SCORE
+            ═══════════════════════════════════════════ */}
+            <div className="bento-card p-5 weather-fade-in weather-fade-in-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                    {/* Gauge */}
+                    <div className="flex items-center gap-4">
+                        <div className="relative w-24 h-24 flex-shrink-0">
+                            <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="7" fill="none" className="text-gray-200 dark:text-slate-700" />
+                                <circle cx="50" cy="50" r="42" stroke={scoreColor(fieldScoreResult.overall)} strokeWidth="7" fill="none"
                                     strokeDasharray={`${fieldScoreResult.overall * 2.64} 264`}
                                     strokeLinecap="round"
-                                    style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                                    style={{ transition: 'stroke-dasharray 1s ease' }}
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-xl font-black" style={{ color: scoreColor(fieldScoreResult.overall) }}>{fieldScoreResult.overall}</span>
+                                <span className="text-2xl font-black" style={{ color: scoreColor(fieldScoreResult.overall) }}>{fieldScoreResult.overall}</span>
+                                <span className="text-[8px] uppercase text-gray-400 dark:text-slate-500 font-bold tracking-wider">Score</span>
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-gray-500 dark:text-slate-400 tracking-wider font-bold">Field Work Score</div>
-                            <div className="text-lg font-bold" style={{ color: scoreColor(fieldScoreResult.overall) }}>{scoreLabel(fieldScoreResult.overall)}</div>
-                            <div className="text-[10px] text-gray-400 dark:text-slate-500">
+                            <div className="text-xs uppercase text-gray-500 dark:text-slate-400 tracking-wider font-bold">🌾 Field Work Score</div>
+                            <div className="text-xl font-bold mt-0.5" style={{ color: scoreColor(fieldScoreResult.overall) }}>{scoreLabel(fieldScoreResult.overall)}</div>
+                            <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
                                 {fieldScoreResult.overall >= 75 ? 'Great day for farming!' : fieldScoreResult.overall >= 50 ? 'Plan tasks carefully' : fieldScoreResult.overall >= 25 ? 'Limited outdoor work' : 'Avoid field operations'}
                             </div>
                         </div>
                     </div>
 
                     {/* Factor Breakdown */}
-                    <div className="space-y-2">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                         {fieldScoreResult.factors.map((factor, idx) => (
                             <div key={idx} className="group">
                                 <div className="flex items-center justify-between text-[11px] mb-0.5">
                                     <div className="flex items-center gap-1.5">
                                         <span>{factor.icon}</span>
                                         <span className="font-semibold text-gray-700 dark:text-slate-300">{factor.name}</span>
-                                        <span className="text-[9px] text-gray-400 dark:text-slate-500">({Math.round(factor.weight * 100)}%)</span>
                                     </div>
                                     <span className="font-bold" style={{ color: scoreColor(factor.score) }}>{factor.score}</span>
                                 </div>
@@ -914,70 +1240,21 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 </div>
             </div>
 
-            {/* ROW 2: Hourly Forecast Timeline */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-slate-700">
-                <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-base font-bold text-gray-900 dark:text-white">⏱️ Hourly Forecast</h4>
-                    <div className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-400 dark:text-slate-500">Total Rainfall:</span>
-                        <span className={`font-bold px-2 py-0.5 rounded-full ${totalRainfall > 5 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400'}`}>
-                            {totalRainfall.toFixed(1)} mm
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                    {next8Hours.map((hour, idx) => (
-                        <div
-                            key={idx}
-                            className="flex-shrink-0 w-[110px] bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3 text-center border border-gray-100 dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-md transition-all cursor-default group"
-                        >
-                            <div className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 mb-1.5 uppercase">
-                                {formatHour(hour.dt)}
-                            </div>
-                            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">
-                                {getWeatherEmoji(hour.weather[0]?.id || 800)}
-                            </div>
-                            <div className="text-lg font-bold text-gray-900 dark:text-white">
-                                {hour.temp.toFixed(0)}°
-                            </div>
-                            <div className="mt-2 space-y-1 text-[10px] text-gray-500 dark:text-slate-400">
-                                <div className="flex justify-between">
-                                    <span>💧</span>
-                                    <span className="font-medium">{Math.round(hour.pop * 100)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>💨</span>
-                                    <span className="font-medium">{hour.wind_speed.toFixed(0)} km/h</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>🌡️</span>
-                                    <span className="font-medium">{hour.humidity}%</span>
-                                </div>
-                            </div>
-                            {hour.rain > 0 && (
-                                <div className="mt-1.5 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[9px] font-bold">
-                                    🌧 {hour.rain.toFixed(1)} mm
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* ROW 3: Agriculture Smart Advisories */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-slate-700">
-                <h4 className="text-base font-bold text-gray-900 dark:text-white mb-4">🌾 Smart Farming Advisories</h4>
+            {/* ═══════════════════════════════════════════
+                SECTION 6: SMART FARMING ADVISORIES
+            ═══════════════════════════════════════════ */}
+            <div className="weather-fade-in weather-fade-in-5">
+                <h4 className="text-base font-bold text-gray-900 dark:text-white mb-3 ml-1">🌾 Smart Farming Advisories</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {advisories.map((adv, idx) => (
                         <div
                             key={idx}
-                            className={`relative border-l-4 rounded-xl p-3.5 ${advisoryColor(adv.level)} transition-all hover:shadow-md`}
+                            className={`bento-card relative border-l-4 p-4 ${advisoryColor(adv.level)} transition-all hover:shadow-lg`}
                         >
                             <div className="flex items-center gap-2 mb-1.5">
                                 <span className="text-lg">{adv.icon}</span>
                                 <span className="text-xs font-bold uppercase tracking-wider">{adv.title}</span>
-                                <span className={`ml-auto w-2 h-2 rounded-full ${advisoryBadge(adv.level)} animate-pulse`}></span>
+                                <span className={`ml-auto w-2 h-2 rounded-full ${advisoryBadge(adv.level)} animate-pulse`} />
                             </div>
                             <p className="text-[11px] leading-relaxed opacity-80 m-0">{adv.message}</p>
                         </div>
@@ -985,35 +1262,17 @@ export default function WeatherDashboard({ lat, lng, locationName }: WeatherDash
                 </div>
             </div>
 
-            {/* ROW 4: Quick Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* ═══════════════════════════════════════════
+                SECTION 7: QUICK STATS
+            ═══════════════════════════════════════════ */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 weather-fade-in weather-fade-in-6">
                 {[
-                    {
-                        label: 'Avg Humidity',
-                        value: `${Math.round(next8Hours.reduce((s, h) => s + h.humidity, 0) / (next8Hours.length || 1))}%`,
-                        icon: '💧',
-                        bg: 'from-cyan-500 to-blue-500'
-                    },
-                    {
-                        label: 'Max Wind',
-                        value: `${Math.max(...next8Hours.map(h => h.wind_speed)).toFixed(0)} km/h`,
-                        icon: '💨',
-                        bg: 'from-slate-500 to-gray-600'
-                    },
-                    {
-                        label: 'Rain Hours',
-                        value: `${next8Hours.filter(h => h.pop > 0.5).length} / 8`,
-                        icon: '🌧️',
-                        bg: 'from-blue-500 to-indigo-600'
-                    },
-                    {
-                        label: 'Temp Range',
-                        value: `${Math.min(...next8Hours.map(h => h.temp)).toFixed(0)}°–${Math.max(...next8Hours.map(h => h.temp)).toFixed(0)}°`,
-                        icon: '🌡️',
-                        bg: 'from-orange-500 to-red-500'
-                    }
+                    { label: 'Avg Humidity', value: `${Math.round(next8Hours.reduce((s, h) => s + h.humidity, 0) / (next8Hours.length || 1))}%`, icon: '💧', bg: 'from-cyan-500 to-blue-500' },
+                    { label: 'Max Wind', value: `${Math.max(...next8Hours.map(h => h.wind_speed)).toFixed(0)} km/h`, icon: '💨', bg: 'from-slate-500 to-gray-600' },
+                    { label: 'Rain Hours', value: `${next8Hours.filter(h => h.pop > 0.5).length} / 8`, icon: '🌧️', bg: 'from-blue-500 to-indigo-600' },
+                    { label: 'Temp Range', value: `${Math.min(...next8Hours.map(h => h.temp)).toFixed(0)}°–${Math.max(...next8Hours.map(h => h.temp)).toFixed(0)}°`, icon: '🌡️', bg: 'from-orange-500 to-red-500' },
                 ].map((stat, idx) => (
-                    <div key={idx} className={`bg-gradient-to-br ${stat.bg} rounded-xl p-3.5 text-white shadow-md`}>
+                    <div key={idx} className={`bg-gradient-to-br ${stat.bg} rounded-2xl p-4 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300`}>
                         <div className="flex justify-between items-start">
                             <div>
                                 <div className="text-[9px] uppercase tracking-wider text-white/70 font-semibold">{stat.label}</div>
