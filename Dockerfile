@@ -13,4 +13,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar /app/app.jar
 
 EXPOSE 8080
+ENV JAVA_TOOL_OPTIONS="-Xms128m -Xmx384m -XX:MaxMetaspaceSize=128m -XX:+UseG1GC"
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
