@@ -5,13 +5,17 @@ import { useTheme } from '../context/ThemeContext';
 import {
     Upload, X, AlertCircle, Leaf, Loader2, ArrowLeft,
     Home, LayoutDashboard, Cloud, User, LogOut,
-    Camera, Sparkles, ShieldCheck, Info, Bug, Microscope
+    Camera, Sparkles, ShieldCheck, Info, Bug, Microscope,
+    Award, BarChart3
 } from 'lucide-react';
 
 interface PredictionResult {
-    disease: string;
-    confidence?: number;
-    recommendation?: string;
+    top_indices: number[];
+    top_scores: number[];
+    top_labels: string[];
+    predicted_index: number;
+    predicted_score: number;
+    predicted_label: string;
 }
 
 export default function DiseasePrediction(): React.JSX.Element {
@@ -87,10 +91,10 @@ export default function DiseasePrediction(): React.JSX.Element {
         setResult(null);
 
         const formData = new FormData();
-        formData.append('image', selectedImage);
+        formData.append('file', selectedImage);
 
         try {
-            const response = await fetch('http://localhost:8080/predict-disease', {
+            const response = await fetch('http://localhost:8080/api/plant/predict?top_k=5', {
                 method: 'POST',
                 body: formData,
             });
@@ -416,44 +420,99 @@ export default function DiseasePrediction(): React.JSX.Element {
                                         Analysis Complete
                                     </div>
 
-                                    <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">Disease Prediction</h3>
+                                    {/* Primary Prediction */}
+                                    <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <Award size={12} /> Top Prediction
+                                    </h3>
                                     <div className="text-3xl font-black text-gray-900 dark:text-white mb-6">
-                                        {result.disease}
+                                        {result.predicted_label}
                                     </div>
 
-                                    {result.confidence !== undefined && (
-                                        <div className="mb-6 p-5 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-100 dark:border-slate-600/50">
-                                            <h4 className="text-sm font-bold text-gray-700 dark:text-slate-300 mb-3 flex items-center justify-between">
-                                                <span className="flex items-center gap-2">
-                                                    <Sparkles size={14} className="text-emerald-500" />
-                                                    Confidence Score
-                                                </span>
-                                                <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{(result.confidence * 100).toFixed(1)}%</span>
-                                            </h4>
-                                            <div className="w-full h-3 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
-                                                    style={{ width: `${result.confidence * 100}%` }}
-                                                />
-                                            </div>
-                                            <div className="flex justify-between mt-2 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
-                                                <span>Low</span>
-                                                <span>Medium</span>
-                                                <span>High</span>
-                                            </div>
+                                    {/* Confidence Score */}
+                                    <div className="mb-6 p-5 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-100 dark:border-slate-600/50">
+                                        <h4 className="text-sm font-bold text-gray-700 dark:text-slate-300 mb-3 flex items-center justify-between">
+                                            <span className="flex items-center gap-2">
+                                                <Sparkles size={14} className="text-emerald-500" />
+                                                Confidence Score
+                                            </span>
+                                            <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{(result.predicted_score * 100).toFixed(1)}%</span>
+                                        </h4>
+                                        <div className="w-full h-3 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
+                                                style={{ width: `${result.predicted_score * 100}%` }}
+                                            />
                                         </div>
-                                    )}
+                                        <div className="flex justify-between mt-2 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
+                                            <span>Low</span>
+                                            <span>Medium</span>
+                                            <span>High</span>
+                                        </div>
+                                    </div>
 
-                                    {result.recommendation && (
-                                        <div>
+                                    {/* Top-K Alternative Predictions */}
+                                    {result.top_labels && result.top_labels.length > 0 && (
+                                        <div className="mb-6">
                                             <h4 className="text-sm font-bold text-gray-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                                <ShieldCheck size={16} className="text-amber-500" />
-                                                Recommended Action
+                                                <BarChart3 size={16} className="text-teal-500" />
+                                                Top {result.top_labels.length} Predictions
                                             </h4>
-                                            <div className="p-5 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30">
-                                                <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">
-                                                    {result.recommendation}
-                                                </p>
+                                            <div className="space-y-3">
+                                                {result.top_labels.map((label, idx) => {
+                                                    const score = result.top_scores[idx];
+                                                    const isTop = idx === 0;
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`p-4 rounded-xl border transition-all ${
+                                                                isTop
+                                                                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40'
+                                                                    : 'bg-gray-50 dark:bg-slate-700/30 border-gray-100 dark:border-slate-600/30'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center ${
+                                                                        isTop
+                                                                            ? 'bg-emerald-500 text-white'
+                                                                            : 'bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-slate-300'
+                                                                    }`}>
+                                                                        {idx + 1}
+                                                                    </span>
+                                                                    <span className={`text-sm font-semibold ${
+                                                                        isTop
+                                                                            ? 'text-emerald-700 dark:text-emerald-400'
+                                                                            : 'text-gray-700 dark:text-slate-300'
+                                                                    }`}>
+                                                                        {label}
+                                                                    </span>
+                                                                    {isTop && (
+                                                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded">
+                                                                            BEST MATCH
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className={`text-sm font-bold ${
+                                                                    isTop
+                                                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                                                        : 'text-gray-500 dark:text-slate-400'
+                                                                }`}>
+                                                                    {(score * 100).toFixed(1)}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full h-2 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-700 ${
+                                                                        isTop
+                                                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                                                                            : 'bg-gradient-to-r from-gray-400 to-gray-300 dark:from-slate-500 dark:to-slate-400'
+                                                                    }`}
+                                                                    style={{ width: `${score * 100}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
