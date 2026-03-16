@@ -2,6 +2,9 @@ spring:
   application:
     name: ai-soil-health-assessment
 
+  jta:
+    enabled: true
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

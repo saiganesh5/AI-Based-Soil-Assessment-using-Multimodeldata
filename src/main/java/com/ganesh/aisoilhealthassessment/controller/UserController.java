@@ -4,14 +4,15 @@ package com.ganesh.aisoilhealthassessment.controller;
 import com.ganesh.aisoilhealthassessment.model.User;
 import com.ganesh.aisoilhealthassessment.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    UserRepository repository;
+
+ private final UserRepository repository;
 
     @CrossOrigin("*")
     @PostMapping("/addUser")
