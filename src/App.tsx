@@ -16,6 +16,7 @@ import Contact from './pages/Contact';
 import Weather from './pages/Weather';
 import DiseasePrediction from './pages/DiseasePrediction';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 
 // Styles
 import './index.css';
@@ -70,6 +71,9 @@ function App(): React.JSX.Element {
                                     </PrivateRoute>
                                 }
                             />
+
+                            {/* 404 Catch-all */}
+                            <Route path="*" element={<NotFound />} />
                         </Routes>
                     </div>
                 </ThemeProvider>

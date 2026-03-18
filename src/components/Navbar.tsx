@@ -1,8 +1,8 @@
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Menu, X } from 'lucide-react';
 
 export default function Navbar(): React.JSX.Element {
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -53,7 +53,7 @@ export default function Navbar(): React.JSX.Element {
                         {currentUser ? (
                             <>
                                 <Link to="/dashboard" className="btn btn-primary btn-sm">Dashboard</Link>
-                                <Link to="/weather" className="btn btn-ghost btn-sm text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20">🌦️ Weather</Link>
+                                <Link to="/weather" className="btn btn-ghost btn-sm text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20"> Weather</Link>
                                 <Link to="/predict-disease" className="btn btn-ghost btn-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">🌿 Disease</Link>
                                 <Link to="/profile" className="btn btn-ghost btn-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20">👤 Profile</Link>
                                 <button onClick={logout} className="btn btn-ghost btn-sm">Logout</button>

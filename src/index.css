@@ -166,4 +166,13 @@
   .sun-glow {
     animation: sunGlow 2.5s ease-in-out infinite;
   }
+
+  /* Plant fading down animation for 404 page */
+  @keyframes plantFade {
+    0%   { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0.15; transform: translateY(24px); }
+  }
+  .animate-plantFade {
+    animation: plantFade 2.5s ease-in-out infinite alternate;
+  }
 }

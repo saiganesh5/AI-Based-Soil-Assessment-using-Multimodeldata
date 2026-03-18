@@ -1,14 +1,13 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useCallback, useMemo, useState } from 'react';
+import { Doughnut } from 'react-chartjs-2';
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
+import { Link, useNavigate } from 'react-router-dom';
+import ChatBot from '../components/ChatBot';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import ChatBot from '../components/ChatBot';
-import { Link } from 'react-router-dom';
 
 // Fix Leaflet default icon
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -407,7 +406,7 @@ export default function Dashboard(): React.JSX.Element {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Dashboard</span>
-                    <Link to="/weather" className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-underline">🌦️ Weather</Link>
+                    <Link to="/weather" className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-underline">Weather</Link>
                     <Link to="/predict-disease" className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors no-underline">🌿 Disease</Link>
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">Upload Data</span>
                     <span className="text-gray-600 dark:text-slate-300 font-medium hidden md:inline">History</span>
