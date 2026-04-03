@@ -230,7 +230,7 @@ const placeholderText = "text-sm text-gray-400 dark:text-slate-500 italic";
    DASHBOARD COMPONENT
 ================================ */
 export default function Dashboard(): React.JSX.Element {
-    const { logout } = useAuth();
+    const { logout, currentUser } = useAuth();
     const navigate = useNavigate();
 
     // Form state
@@ -424,7 +424,7 @@ export default function Dashboard(): React.JSX.Element {
 
             {/* MAIN CONTENT */}
             <div className="container py-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Welcome, Farmer!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Welcome, {currentUser?.displayName || 'Farmer'}!</h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
