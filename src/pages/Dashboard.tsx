@@ -502,7 +502,7 @@ export default function Dashboard(): React.JSX.Element {
                         <div className="space-y-3">
                             <div>
                                 <label className={labelCls}>Indian State</label>
-                                <select value={state} onChange={(e) => setState(e.target.value)} className={selectCls}>
+                                <select value={state} onChange={(e) => { setState(e.target.value); setDistrict(''); }} className={selectCls}>
                                     <option value="">Select State</option>
                                     {Object.keys(stateDistrictDB).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -510,8 +510,12 @@ export default function Dashboard(): React.JSX.Element {
                             <div>
                                 <label className={labelCls}>District</label>
                                 <div className="flex gap-2">
-                                    <input type="text" placeholder="Enter District..." value={district} onChange={(e) => setDistrict(e.target.value)}
-                                        className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-gray-400 dark:placeholder:text-slate-500" />
+                                    <select value={district} onChange={(e) => setDistrict(e.target.value)} className={`flex-1 ${selectCls}`} disabled={!state}>
+                                        <option value="">{state ? 'Select District' : 'Select a State first'}</option>
+                                        {state && (stateDistrictDB as Record<string, string[]>)[state]?.map((d: string) => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
                                     <button className="px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-none cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors text-lg" onClick={() => setShowMapModal(true)}>📍</button>
                                 </div>
                             </div>
