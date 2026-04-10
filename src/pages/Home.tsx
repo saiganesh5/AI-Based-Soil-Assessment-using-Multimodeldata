@@ -22,7 +22,7 @@ export default function Home(): React.JSX.Element {
                         </div>
 
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6 animate-slideUp">
-                            Transform Your Farming with
+                            Transform Your Farmin with
                             <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent"> AI-Powered Soil Analysis</span>
                         </h1>
 
