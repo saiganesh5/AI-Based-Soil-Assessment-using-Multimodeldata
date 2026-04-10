@@ -22,8 +22,10 @@ interface Message {
 
 export default function ChatBot(): React.JSX.Element {
     const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [showGreeting, setShowGreeting] = useState<boolean>(true);
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'bot', text: 'Hello! 🌱 I\'m SoilBot, your soil health assistant. Ask me anything about soil, crops, fertilizers, or farming!' }
+        { role: 'bot', text: 'Hello! 🌱 I\'m SoilBot, your soil health assistant. Ask me anything about soil, crops, fertilizers, or farming!' },
+        { role: 'bot', text: 'अपनी भाषा चुनें/ Choose your language' }
     ]);
     const [input, setInput] = useState<string>('');
     const [isTyping, setIsTyping] = useState<boolean>(false);
@@ -38,8 +40,11 @@ export default function ChatBot(): React.JSX.Element {
     useEffect(() => {
         if (isOpen) {
             setTimeout(() => inputRef.current?.focus(), 350);
+            setShowGreeting(false);
         }
     }, [isOpen]);
+
+
 
     const sendMessage = useCallback(async () => {
         const trimmed = input.trim();
@@ -86,11 +91,73 @@ export default function ChatBot(): React.JSX.Element {
         }
     }, [sendMessage]);
 
+    // Inline keyframes for wave animation
+    const waveKeyframes = `
+        @keyframes wave-hand {
+            0% { transform: rotate(0deg); }
+            10% { transform: rotate(14deg); }
+            20% { transform: rotate(-8deg); }
+            30% { transform: rotate(14deg); }
+            40% { transform: rotate(-4deg); }
+            50% { transform: rotate(10deg); }
+            60% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
+        @keyframes greeting-slide-in {
+            0% { opacity: 0; transform: translateX(20px) scale(0.8); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes greeting-fade-out {
+            0% { opacity: 1; transform: translateX(0) scale(1); }
+            100% { opacity: 0; transform: translateX(20px) scale(0.8); }
+        }
+    `;
+
     return (
         <>
+            <style>{waveKeyframes}</style>
+
+            {/* Greeting Bubble */}
+            {!isOpen && (
+                <div
+                    className="fixed bottom-[90px] right-6 z-[9999] flex items-end gap-2 pointer-events-none"
+                    style={{
+                        animation: showGreeting
+                            ? 'greeting-slide-in 0.5s ease-out forwards'
+                            : 'greeting-fade-out 0.4s ease-in forwards',
+                    }}
+                    onAnimationEnd={(e) => {
+                        if (e.animationName === 'greeting-fade-out') {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                        }
+                    }}
+                >
+                    <div className="bg-white dark:bg-slate-700 rounded-2xl rounded-br-sm shadow-lg px-4 py-3 max-w-[240px] border border-gray-200 dark:border-slate-600">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span
+                                className="text-xl"
+                                style={{
+                                    display: 'inline-block',
+                                    animation: 'wave-hand 1.8s ease-in-out 3',
+                                    transformOrigin: '70% 70%',
+                                }}
+                            >
+                                👋
+                            </span>
+                            <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">SoilBot</span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-slate-300 m-0 leading-relaxed">
+                            कुछ सवाल हैं आपकी मिटटी की बारे में ?<br />
+                            మీ మట్టి గురించి మీకు ఏమైనా ప్రశ్నలు ఉన్నాయా?<br />
+                            <span className="text-gray-400 dark:text-slate-400">Any queries regarding your soil?</span>
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Floating Action Button */}
             <button
-                className={`fixed bottom-6 right-6 w-14 h-14 rounded-full text-xl cursor-pointer border-none z-[9999] shadow-xl transition-all duration-300 hover:scale-110 ${isOpen
+                className={`fixed bottom-6 right-6 w-14 h-14 rounded-full cursor-pointer border-none z-[9999] shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center ${isOpen
                     ? 'bg-gray-600 dark:bg-slate-600 text-white rotate-90'
                     : 'bg-gradient-to-br from-emerald-500 to-green-600 text-white animate-fab-pulse'
                     }`}
@@ -98,7 +165,28 @@ export default function ChatBot(): React.JSX.Element {
                 aria-label="Toggle chatbot"
                 id="chatbot-fab"
             >
-                {isOpen ? '✕' : '💬'}
+                {isOpen ? (
+                    <span className="text-xl">✕</span>
+                ) : (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Bot head */}
+                        <rect x="3" y="7" width="18" height="12" rx="3" fill="white" opacity="0.95" />
+                        {/* Eyes */}
+                        <circle cx="9" cy="13" r="1.8" fill="#16a34a" />
+                        <circle cx="15" cy="13" r="1.8" fill="#16a34a" />
+                        {/* Eye shine */}
+                        <circle cx="9.5" cy="12.5" r="0.5" fill="white" />
+                        <circle cx="15.5" cy="12.5" r="0.5" fill="white" />
+                        {/* Mouth */}
+                        <path d="M9.5 16.5C10.5 17.5 13.5 17.5 14.5 16.5" stroke="#16a34a" strokeWidth="1.2" strokeLinecap="round" />
+                        {/* Antenna */}
+                        <line x1="12" y1="7" x2="12" y2="4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+                        <circle cx="12" cy="3" r="1.5" fill="white" opacity="0.9" />
+                        {/* Ears / side bits */}
+                        <rect x="0.5" y="11" width="2.5" height="4" rx="1" fill="white" opacity="0.8" />
+                        <rect x="21" y="11" width="2.5" height="4" rx="1" fill="white" opacity="0.8" />
+                    </svg>
+                )}
             </button>
 
             {/* Chat Window */}
