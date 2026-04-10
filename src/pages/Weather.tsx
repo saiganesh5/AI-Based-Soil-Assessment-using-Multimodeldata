@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import WeatherDashboard from '../components/WeatherDashboard';
+import { useTour, type TourStep } from '../context/TourContext';
 
 // Fix Leaflet default icon
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +53,43 @@ export default function Weather(): React.JSX.Element {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
+    const { isPageTourDone, startPageTour, resetPageTour } = useTour();
+
+    const weatherTourSteps: TourStep[] = useMemo(() => [
+        {
+            target: '#weather-search',
+            title: 'Search Your Location 🔍',
+            description: 'Type a city, district, or village name to look up weather data. Or click "My Location" to auto-detect.',
+            position: 'bottom',
+        },
+        {
+            target: '#quick-cities',
+            title: 'Quick City Selection ⚡',
+            description: 'Click any city pill for instant weather data — great shortcuts for major Indian cities.',
+            position: 'bottom',
+        },
+        {
+            target: '#map-toggle',
+            title: 'Map View 🗺️',
+            description: 'Toggle the interactive map to visually pick your location.',
+            position: 'bottom',
+        },
+        {
+            target: '#weather-dashboard',
+            title: 'Weather Insights 🌤️',
+            description: 'View detailed weather data including temperature, humidity, wind, rainfall forecast, and agricultural advisory for your location.',
+            position: 'top',
+        },
+    ], []);
+
+    useEffect(() => {
+        if (!isPageTourDone('weather')) {
+            const timer = setTimeout(() => {
+                startPageTour('weather', weatherTourSteps);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isPageTourDone, startPageTour, weatherTourSteps]);
 
     const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [locationName, setLocationName] = useState<string>('');
@@ -178,7 +216,7 @@ export default function Weather(): React.JSX.Element {
                     </div>
 
                     {/* Quick City Pills */}
-                    <div className="hidden lg:flex items-center gap-1.5 overflow-x-auto scroll-thin-x">
+                    <div id="quick-cities" className="hidden lg:flex items-center gap-1.5 overflow-x-auto scroll-thin-x">
                         {QUICK_CITIES.map((city) => (
                             <button
                                 key={city.name}
@@ -217,6 +255,14 @@ export default function Weather(): React.JSX.Element {
                             {theme === 'light' ? '🌙' : '☀️'}
                         </button>
                         <button className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleLogout}>🚪</button>
+                        <button
+                            className="p-2 rounded-full text-sm hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-all cursor-pointer border-none bg-transparent text-sky-600 dark:text-sky-400 font-bold"
+                            onClick={() => { resetPageTour('weather'); setTimeout(() => startPageTour('weather', weatherTourSteps), 100); }}
+                            title="Take a guided tour"
+                            aria-label="Restart tour"
+                        >
+                            ?
+                        </button>
                     </div>
                 </div>
             </div>
@@ -225,7 +271,7 @@ export default function Weather(): React.JSX.Element {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
 
                 {/* ─── SEARCH BAR ─── */}
-                <div className="bento-card p-4 sm:p-5 mb-5 weather-fade-in">
+                <div id="weather-search" className="bento-card p-4 sm:p-5 mb-5 weather-fade-in">
                     <div className="flex flex-col sm:flex-row gap-3">
                         {/* Search Input with Suggestions */}
                         <div className="relative flex-1" ref={searchBoxRef}>
@@ -281,6 +327,7 @@ export default function Weather(): React.JSX.Element {
                                 📍 My Location
                             </button>
                             <button
+                                id="map-toggle"
                                 className={`px-3 py-3 rounded-xl text-sm font-medium border-none cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5
                                     ${showMap
                                         ? 'bg-indigo-500 text-white shadow-md'
@@ -338,11 +385,13 @@ export default function Weather(): React.JSX.Element {
                 )}
 
                 {/* ─── WEATHER DASHBOARD ─── */}
+                <div id="weather-dashboard">
                 <WeatherDashboard
                     lat={coords?.lat ?? 20.5937}
                     lng={coords?.lng ?? 78.9629}
                     locationName={locationName || undefined}
                 />
+                </div>
             </div>
         </div>
     );

@@ -1,13 +1,14 @@
 import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import { Link, useNavigate } from 'react-router-dom';
 import ChatBot from '../components/ChatBot';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useTour, type TourStep } from '../context/TourContext';
 
 // Fix Leaflet default icon
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -393,11 +394,69 @@ export default function Dashboard(): React.JSX.Element {
     }, [season, soilData]);
 
     const { theme, toggleTheme } = useTheme();
+    const { isPageTourDone, startPageTour, resetPageTour } = useTour();
+
+    // Dashboard tour steps
+    const dashboardTourSteps: TourStep[] = useMemo(() => [
+        {
+            target: '#dashboard-navbar',
+            title: 'Welcome to the Dashboard! 🎉',
+            description: 'This is your command center for soil analysis. Use the navigation links to access Weather, Disease Prediction, and more.',
+            position: 'bottom',
+        },
+        {
+            target: '#upload-card',
+            title: 'Upload Your Soil Image 📸',
+            description: 'Start by uploading a clear photo of your soil. Our AI model will analyze it to detect the soil type.',
+            position: 'right',
+        },
+        {
+            target: '#analysis-card',
+            title: 'Select Your Location 📍',
+            description: 'Choose your Indian state and district. You can also pin your location on the map for precise data.',
+            position: 'left',
+        },
+        {
+            target: '#analyze-btn',
+            title: 'Run the Analysis 🔬',
+            description: 'After uploading an image and selecting your location, click "Analyze Soil" to get AI-powered results instantly.',
+            position: 'top',
+        },
+        {
+            target: '#classification-card',
+            title: 'Soil Classification 🧪',
+            description: 'See your detected soil type on the gauge chart, along with all 12 Indian soil categories for reference.',
+            position: 'right',
+        },
+        {
+            target: '#crops-card',
+            title: 'Crop Recommendations 🌾',
+            description: 'View crops that suit your soil. Click any crop to see fertilizer plans, growth timeline, yield predictions, and profit estimates.',
+            position: 'left',
+        },
+        {
+            target: '#chatbot-fab',
+            title: 'Meet SoilBot 🤖',
+            description: 'Got questions? Chat with our AI assistant anytime! Ask about soil, crops, fertilizers, government schemes, and more.',
+            position: 'left',
+        },
+    ], []);
+
+    // Auto-start tour for first-time visitors
+    useEffect(() => {
+        if (!isPageTourDone('dashboard')) {
+            // Small delay so elements render first
+            const timer = setTimeout(() => {
+                startPageTour('dashboard', dashboardTourSteps);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isPageTourDone, startPageTour, dashboardTourSteps]);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-slate-900 transition-colors">
             {/* NAVBAR */}
-            <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
+            <div id="dashboard-navbar" className="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-lg font-bold">
                     <Link to='/' className="flex items-center gap-2 no-underline">
                         <span className="text-xl">🌱</span>
@@ -419,6 +478,14 @@ export default function Dashboard(): React.JSX.Element {
                         {theme === 'light' ? '🌙' : '☀️'}
                     </button>
                     <button className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleLogout}>🚪 Logout</button>
+                    <button
+                        className="p-2 rounded-full text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer border-none bg-transparent text-emerald-600 dark:text-emerald-400 font-bold"
+                        onClick={() => { resetPageTour('dashboard'); setTimeout(() => startPageTour('dashboard', dashboardTourSteps), 100); }}
+                        title="Take a guided tour"
+                        aria-label="Restart tour"
+                    >
+                        ?
+                    </button>
                 </div>
             </div>
 
@@ -430,7 +497,7 @@ export default function Dashboard(): React.JSX.Element {
 
 
                     {/* 1. UPLOAD SOIL IMAGE */}
-                    <div className={cardCls}>
+                    <div id="upload-card" className={cardCls}>
                         <h3 className={cardTitle}>Upload Soil Image</h3>
                         <div
                             className="w-full h-48 rounded-xl border-2 border-dashed border-gray-300 dark:border-slate-600 flex items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors bg-gray-50 dark:bg-slate-700/50 overflow-hidden mb-4"
@@ -468,7 +535,7 @@ export default function Dashboard(): React.JSX.Element {
                     </div>
 
                     {/* 3. SOIL CLASSIFICATION (GAUGE) */}
-                    <div className={cardCls}>
+                    <div id="classification-card" className={cardCls}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Soil Classification</h3>
                             {analysisResult && (
@@ -497,7 +564,7 @@ export default function Dashboard(): React.JSX.Element {
                     </div>
 
                     {/* 4. ANALYSIS RESULTS */}
-                    <div className={cardCls}>
+                    <div id="analysis-card" className={cardCls}>
                         <h3 className={cardTitle}>Analysis Results</h3>
                         <div className="space-y-3">
                             <div>
@@ -530,7 +597,7 @@ export default function Dashboard(): React.JSX.Element {
                                     <option value="dry">Dry / Arid</option>
                                 </select>
                             </div>
-                            <button className="btn btn-primary w-full mt-2" onClick={handleAnalyze} disabled={loading}>
+                            <button id="analyze-btn" className="btn btn-primary w-full mt-2" onClick={handleAnalyze} disabled={loading}>
                                 {loading ? 'Analyzing...' : 'Analyze Soil'}
                             </button>
                         </div>
@@ -575,7 +642,7 @@ export default function Dashboard(): React.JSX.Element {
                     </div>
 
                     {/* 7. RECOMMENDED CROPS */}
-                    <div className={cardCls}>
+                    <div id="crops-card" className={cardCls}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Recommended Crops</h3>
                             <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold">

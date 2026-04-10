@@ -1,9 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { TourProvider } from './context/TourContext';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import TourOverlay from './components/TourOverlay';
 
 // Pages
 import Home from './pages/Home';
@@ -26,6 +28,8 @@ function App(): React.JSX.Element {
         <Router>
             <AuthProvider>
                 <ThemeProvider>
+                    <TourProvider>
+                    <TourOverlay />
                     <div className="min-h-screen flex flex-col">
                         <Routes>
                             {/* Public Routes with Navbar/Footer */}
@@ -76,6 +80,7 @@ function App(): React.JSX.Element {
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </div>
+                    </TourProvider>
                 </ThemeProvider>
             </AuthProvider>
         </Router>

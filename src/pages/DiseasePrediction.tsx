@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -8,6 +8,7 @@ import {
     Camera, Sparkles, ShieldCheck, Info, Bug, Microscope,
     Award, BarChart3
 } from 'lucide-react';
+import { useTour, type TourStep } from '../context/TourContext';
 
 interface PredictionResult {
     top_indices: number[];
@@ -22,6 +23,43 @@ export default function DiseasePrediction(): React.JSX.Element {
     const { logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
+    const { isPageTourDone, startPageTour, resetPageTour } = useTour();
+
+    const diseaseTourSteps: TourStep[] = useMemo(() => [
+        {
+            target: '#disease-sidebar',
+            title: 'Navigate Easily 🧭',
+            description: 'Use the sidebar to switch between Home, Dashboard, Weather, Disease Prediction, and Profile pages.',
+            position: 'right',
+        },
+        {
+            target: '#disease-upload',
+            title: 'Upload a Leaf Image 🌿',
+            description: 'Drag & drop or click to upload a photo of your crop\'s leaf. Use clear, well-lit images for best results.',
+            position: 'bottom',
+        },
+        {
+            target: '#disease-analyze-btn',
+            title: 'Analyze Crop Health ✨',
+            description: 'Click this button to run our deep learning model on your uploaded image. The AI will identify diseases instantly.',
+            position: 'top',
+        },
+        {
+            target: '#disease-results',
+            title: 'View Results 📊',
+            description: 'The AI will show detected disease names, confidence scores, top predictions, and treatment suggestions here.',
+            position: 'left',
+        },
+    ], []);
+
+    useEffect(() => {
+        if (!isPageTourDone('disease')) {
+            const timer = setTimeout(() => {
+                startPageTour('disease', diseaseTourSteps);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isPageTourDone, startPageTour, diseaseTourSteps]);
 
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -143,7 +181,7 @@ export default function DiseasePrediction(): React.JSX.Element {
         <div className="min-h-screen flex bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
 
             {/* ═══════════ LEFT SIDEBAR ═══════════ */}
-            <aside className="w-72 min-h-screen bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-r border-gray-200/60 dark:border-slate-700/60 flex flex-col fixed left-0 top-0 z-20">
+            <aside id="disease-sidebar" className="w-72 min-h-screen bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-r border-gray-200/60 dark:border-slate-700/60 flex flex-col fixed left-0 top-0 z-20">
 
                 {/* Logo */}
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700/50">
@@ -211,6 +249,14 @@ export default function DiseasePrediction(): React.JSX.Element {
                             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
                                 <Sparkles size={12} /> AI Powered
                             </span>
+                            <button
+                                className="p-2 rounded-full text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer border-none bg-transparent text-emerald-600 dark:text-emerald-400 font-bold"
+                                onClick={() => { resetPageTour('disease'); setTimeout(() => startPageTour('disease', diseaseTourSteps), 100); }}
+                                title="Take a guided tour"
+                                aria-label="Restart tour"
+                            >
+                                ?
+                            </button>
                         </div>
                     </div>
                 </header>
@@ -259,7 +305,7 @@ export default function DiseasePrediction(): React.JSX.Element {
 
                         {/* ── Left Column: Upload Box ── */}
                         <div className="space-y-6">
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-100 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
+                            <div id="disease-upload" className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-100 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-shadow">
                                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -331,6 +377,7 @@ export default function DiseasePrediction(): React.JSX.Element {
                                     )}
 
                                     <button
+                                        id="disease-analyze-btn"
                                         type="submit"
                                         disabled={!selectedImage || isLoading}
                                         className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all duration-300 flex items-center justify-center gap-2 border-none cursor-pointer
@@ -373,7 +420,7 @@ export default function DiseasePrediction(): React.JSX.Element {
                         </div>
 
                         {/* ── Right Column: Results ── */}
-                        <div className="flex flex-col gap-6">
+                        <div id="disease-results" className="flex flex-col gap-6">
 
                             {/* Loading state */}
                             {isLoading && (

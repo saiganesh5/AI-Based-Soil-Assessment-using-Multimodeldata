@@ -1,7 +1,40 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTour, type TourStep } from '../context/TourContext';
 
 export default function Home(): React.JSX.Element {
+    const { isPageTourDone, startPageTour } = useTour();
+
+    const homeTourSteps: TourStep[] = useMemo(() => [
+        {
+            target: '#hero-cta',
+            title: 'Get Started 🚀',
+            description: 'Click here to go to the Dashboard and start your AI-powered soil analysis. It only takes a few clicks!',
+            position: 'bottom',
+        },
+        {
+            target: '#features',
+            title: 'Explore Our Features 🌟',
+            description: 'Image-based analysis, crop recommendations, fertilizer guides, nutrient detection — all powered by AI.',
+            position: 'top',
+        },
+        {
+            target: '#how-it-works',
+            title: 'How It Works 💡',
+            description: 'Three simple steps: Upload a soil image → AI analyzes it → Get detailed insights and recommendations.',
+            position: 'top',
+        },
+    ], []);
+
+    useEffect(() => {
+        if (!isPageTourDone('home')) {
+            const timer = setTimeout(() => {
+                startPageTour('home', homeTourSteps);
+            }, 1200);
+            return () => clearTimeout(timer);
+        }
+    }, [isPageTourDone, startPageTour, homeTourSteps]);
+
     return (
         <div>
             {/* HERO SECTION */}
@@ -33,7 +66,7 @@ export default function Home(): React.JSX.Element {
                         </p>
 
                         <div className="flex flex-wrap gap-4 mb-12 animate-slideUp">
-                            <Link to="/dashboard" className="btn btn-lg bg-white text-emerald-800 font-bold hover:bg-emerald-50 shadow-xl hover:shadow-2xl">
+                            <Link id="hero-cta" to="/dashboard" className="btn btn-lg bg-white text-emerald-800 font-bold hover:bg-emerald-50 shadow-xl hover:shadow-2xl">
                                 Start Analysis
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
