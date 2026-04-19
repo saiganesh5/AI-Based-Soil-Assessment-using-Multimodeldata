@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, ArrowLeft, ArrowRight, Mail, ShieldCheck, Loader2 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = 'http://soilhealthassessment.ap-south-1.elasticbeanstalk.com:5000';
 
 export default function Register(): React.JSX.Element {
     // ── Step state (1 → 2 → 3) ──

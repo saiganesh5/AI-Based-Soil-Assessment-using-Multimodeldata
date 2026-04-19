@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 
-const API_URL = 'http://localhost:8080';
+const API_URL = 'http://soilhealthassessment.ap-south-1.elasticbeanstalk.com:5000';
 
 interface SoilAnalysisRequest {
     [key: string]: unknown;

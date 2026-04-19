@@ -132,7 +132,7 @@ export default function DiseasePrediction(): React.JSX.Element {
         formData.append('file', selectedImage);
 
         try {
-            const response = await fetch('http://localhost:8080/api/plant/predict?top_k=5', {
+            const response = await fetch('http://soilhealthassessment.ap-south-1.elasticbeanstalk.com:5000/api/plant/predict?top_k=5', {
                 method: 'POST',
                 body: formData,
             });
