@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, Mail, ShieldCheck, Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
 
-const API_BASE = 'http://soilhealthassessment.ap-south-1.elasticbeanstalk.com:5000';
+const API_BASE = 'https://d35b12e35xr9rp.cloudfront.net';
 
 export default function ForgotPassword(): React.JSX.Element {
     // ── Step state (1 → 2 → 3 → success) ──

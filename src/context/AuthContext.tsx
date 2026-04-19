@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-const API_BASE = 'http://soilhealthassessment.ap-south-1.elasticbeanstalk.com:5000';
+const API_BASE = 'https://d35b12e35xr9rp.cloudfront.net';
 
 interface User {
     email: string;
