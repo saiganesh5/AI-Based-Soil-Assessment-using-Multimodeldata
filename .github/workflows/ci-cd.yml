@@ -40,6 +40,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: application-jar
+          path: deploy
+
+      - name: Find JAR file
+        id: find-jar
+        run: echo "JAR_FILE=$(ls deploy/*.jar | head -1)" >> $GITHUB_OUTPUT
 
       - name: Deploy to AWS Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
@@ -49,5 +54,5 @@ jobs:
           application_name: ai-soil-health-assessment
           environment_name: ai-soil-health-assessment-env
           version_label: "version-${{ github.run_id }}"
-          deployment_package: target/*.jar
+          deployment_package: ${{ steps.find-jar.outputs.JAR_FILE }}
           region: ap-south-1
