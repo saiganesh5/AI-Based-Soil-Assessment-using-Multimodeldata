@@ -1,0 +1,50 @@
+name: Java CI/CD with AWS Elastic Beanstalk
+
+on:
+  push:
+    branches: [ "main", "test-backend" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: ./mvnw clean package -DskipTests
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: target/*.jar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test-backend')
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: application-jar
+
+      - name: Deploy to AWS Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21.2.3
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_access_secret: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ai-soil-health-assessment
+          environment_name: ai-soil-health-assessment-env
+          version_label: "version-${{ github.run_id }}"
+          deployment_package: target/*.jar
+          region: ap-south-1

@@ -2,6 +2,10 @@ spring:
   application:
     name: ai-soil-health-assessment
 
+
+  config:
+    import: optional:file:secrets.env[properties]
+
   jta:
     enabled: true
 
@@ -31,7 +35,7 @@ spring:
             required: true
 
 server:
-  port: 8080
+  port: 5000
 
 sendbridge:
   api:
