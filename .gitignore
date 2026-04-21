@@ -36,5 +36,6 @@ build/
 
 /src/main/resources/application.properties
 /secrets.env
-
-
+*.zip
+.venv/
+.claude/
