@@ -136,7 +136,18 @@ const soilDatabase = {
     "Clay": { color: "#8B4513", crops: ["Rice", "Broccoli"], notes: "Dense, holds water very long." },
     "Silt": { color: "#B0BEC5", crops: ["Vegetables", "Wheat"], notes: "Retains moisture better than sand." },
     "Loamy": { color: "#6DBE45", crops: ["Wheat", "Sugarcane", "Cotton", "Vegetables"], notes: "Ideal for agriculture, balanced nutrients." },
-    "Chalky": { color: "#F5F5DC", crops: ["Barley", "Spinach"], notes: "Stony, alkaline in nature." }
+    "Chalky": { color: "#F5F5DC", crops: ["Barley", "Spinach"], notes: "Stony, alkaline in nature." },
+    "Yellow": { color: "#DAA520", crops: ["Rice", "Potato", "Pulses", "Vegetables"], notes: "Acidic, low nutrient content, found in warm humid regions." }
+};
+
+// Maps model prediction labels to soilDatabase keys
+const modelLabelToSoilType: Record<string, string> = {
+    "alluvial_soil": "Alluvial",
+    "black_soil": "Black",
+    "clay_soil": "Clay",
+    "laterite_soil": "Laterite",
+    "red_soil": "Red",
+    "yellow_soil": "Yellow",
 };
 
 const cropIntelligence = {
@@ -156,7 +167,8 @@ const fertilizerPrices = {
 const soilHealthScores = {
     "Alluvial": 85, "Black": 90, "Red": 65, "Laterite": 55,
     "Desert": 40, "Forest": 88, "Peaty": 75, "Sandy": 50,
-    "Clay": 70, "Silt": 80, "Loamy": 95, "Chalky": 60
+    "Clay": 70, "Silt": 80, "Loamy": 95, "Chalky": 60,
+    "Yellow": 58
 };
 
 const rotationAdvisor = {
@@ -335,28 +347,57 @@ export default function Dashboard(): React.JSX.Element {
 
         setLoading(true);
         try {
-            let result: AnalysisResult;
+            let detectedSoilType: string | null = null;
+
+            // Send soil image to the ML model via Spring Boot backend
             try {
-                const response = await fetch("http://127.0.0.1:5000/analyze", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ location: district, state, climate })
+                const formData = new FormData();
+                formData.append('file', soilImage);
+
+                const mlResponse = await fetch('https://d35b12e35xr9rp.cloudfront.net/api/soil/predict-soil-type', {
+                    method: 'POST',
+                    body: formData,
                 });
-                if (response.ok) result = await response.json() as AnalysisResult;
-                else throw new Error("Backend offline");
-            } catch {
-                const soilKeys = Object.keys(soilDatabase);
-                result = {
-                    soil_type: soilKeys[Math.floor(Math.random() * soilKeys.length)],
-                    ph: (Math.random() * 3 + 5).toFixed(1),
-                    moisture: Math.floor(Math.random() * 80),
-                    nutrients: { N: Math.floor(Math.random() * 200), P: Math.floor(Math.random() * 100), K: Math.floor(Math.random() * 400) }
-                };
+
+                if (mlResponse.ok) {
+                    const mlData = await mlResponse.json();
+                    // Map model label (e.g. "red_soil") to soilDatabase key (e.g. "Red")
+                    if (mlData.is_soil && mlData.predicted_label) {
+                        detectedSoilType = modelLabelToSoilType[mlData.predicted_label] || null;
+                    }
+                    if (!detectedSoilType && mlData.predicted_label) {
+                        // Even if confidence is low, use the prediction as a best guess
+                        detectedSoilType = modelLabelToSoilType[mlData.predicted_label] || null;
+                    }
+                }
+            } catch (err) {
+                console.warn('ML model request failed, using fallback:', err);
             }
-            if (!(soilDatabase as Record<string, SoilInfo>)[result.soil_type]) {
-                const soilKeys = Object.keys(soilDatabase);
-                result.soil_type = soilKeys[Math.floor(Math.random() * soilKeys.length)];
+
+            // Fallback: use state-based soil mapping if model is unavailable
+            if (!detectedSoilType) {
+                const stateSoils = (stateSoilMapping as Record<string, string[]>)[state];
+                if (stateSoils && stateSoils.length > 0) {
+                    detectedSoilType = stateSoils[Math.floor(Math.random() * stateSoils.length)];
+                } else {
+                    const soilKeys = Object.keys(soilDatabase);
+                    detectedSoilType = soilKeys[Math.floor(Math.random() * soilKeys.length)];
+                }
             }
+
+            // Verify it exists in our database
+            if (!(soilDatabase as Record<string, SoilInfo>)[detectedSoilType]) {
+                const soilKeys = Object.keys(soilDatabase);
+                detectedSoilType = soilKeys[Math.floor(Math.random() * soilKeys.length)];
+            }
+
+            const result: AnalysisResult = {
+                soil_type: detectedSoilType,
+                ph: (Math.random() * 3 + 5).toFixed(1),
+                moisture: Math.floor(Math.random() * 80),
+                nutrients: { N: Math.floor(Math.random() * 200), P: Math.floor(Math.random() * 100), K: Math.floor(Math.random() * 400) }
+            };
+
             setAnalysisResult(result);
             const sd = (soilDatabase as Record<string, SoilInfo>)[result.soil_type];
             if (sd && sd.crops.length > 0) setSelectedCrop(sd.crops[0]);
