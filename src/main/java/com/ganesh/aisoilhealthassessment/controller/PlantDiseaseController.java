@@ -21,7 +21,9 @@ import java.util.Map;
 public class PlantDiseaseController {
 
     private final RestTemplate restTemplate;
-    private final String FASTAPI_URL = "http://localhost:8000";
+
+    @org.springframework.beans.factory.annotation.Value("${python.plant.service.url:http://localhost:8000}")
+    private String FASTAPI_URL;
 
     @GetMapping("/")
     public ResponseEntity<?> getInfo() {
