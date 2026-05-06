@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import urllib.request
 from typing import List, Optional
 
 import numpy as np
@@ -11,12 +12,32 @@ from PIL import Image
 import tensorflow as tf
 
 # ---------- Configuration ----------
+MODEL_URL = "https://huggingface.co/saiganesh0813/Plant-Disease-Prediction/resolve/main/plant%20disease_99.04.h5"
 MODEL_PATH = os.getenv("PLANT_MODEL_PATH", os.path.join(os.path.dirname(__file__), "plant disease_99.04.h5"))
 LABELS_TXT = os.getenv("PLANT_LABELS_TXT", os.path.join(os.path.dirname(__file__), "class_names.txt"))
 LABELS_JSON = os.getenv("PLANT_LABELS_JSON", os.path.join(os.path.dirname(__file__), "class_names.json"))
 TARGET_SIZE = (200, 200)  # Image size from crop-disease-prediction-final-model.ipynb
 NUM_CLASSES = 56  # Model output layers (EfficientNetB3 based)
 TOP_K_DEFAULT = 5
+
+
+def _download_model_if_needed():
+    """Download model from Hugging Face if missing or corrupted (e.g. Git LFS pointer)."""
+    min_size = 1_000_000  # Real model is ~135MB; LFS pointer is ~130 bytes
+    if os.path.isfile(MODEL_PATH) and os.path.getsize(MODEL_PATH) > min_size:
+        return  # Model file looks valid
+
+    print(f"[INFO] Model file missing or too small. Downloading from Hugging Face...")
+    try:
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        size_mb = os.path.getsize(MODEL_PATH) / (1024 * 1024)
+        print(f"[INFO] Model downloaded successfully ({size_mb:.1f} MB)")
+    except Exception as e:
+        print(f"[ERROR] Failed to download model: {e}")
+        raise
+
+
+_download_model_if_needed()
 
 app = FastAPI(title="Plant Disease Classifier API", version="1.0.0")
 
