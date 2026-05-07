@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
@@ -24,10 +26,12 @@ public class GeminiDiseaseService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
-    @Value("${gemini.model:gemini-3-flash-preview}")
+    @Value("${gemini.model:gemini-2.0-flash}")
     private String geminiModel;
 
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+
+    private static final int MAX_RETRIES = 2;
 
     private static final String DISEASE_PROMPT = """
             You are an expert plant pathologist and agricultural scientist. Analyze this image of a plant/crop leaf carefully and identify the top %d most likely diseases or conditions.
@@ -51,7 +55,7 @@ public class GeminiDiseaseService {
         // Build the Gemini API request body
         Map<String, Object> requestBody = buildGeminiRequest(base64Image, mimeType, topK);
 
-        // Call Gemini API
+        // Call Gemini API with retry logic for transient 503 errors
         String url = String.format(GEMINI_API_URL, geminiModel, geminiApiKey);
 
         HttpHeaders headers = new HttpHeaders();
@@ -61,14 +65,49 @@ public class GeminiDiseaseService {
 
         log.info("Calling Gemini API for disease prediction with model: {}", geminiModel);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("Gemini API returned status: " + response.getStatusCode());
-        }
+        String responseBody = callGeminiWithRetry(url, requestEntity);
 
         // Parse the Gemini response
-        return parseGeminiResponse(response.getBody(), topK);
+        return parseGeminiResponse(responseBody, topK);
+    }
+
+    /**
+     * Calls the Gemini API with retry logic for transient 503 errors.
+     * Uses byte[] response type to avoid Jackson 3.x String deserialization issues.
+     */
+    private String callGeminiWithRetry(String url, HttpEntity<Map<String, Object>> requestEntity) {
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // Use byte[] to avoid Jackson 3.x String deserialization mismatch
+                ResponseEntity<byte[]> response = restTemplate.postForEntity(url, requestEntity, byte[].class);
+
+                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                    throw new RuntimeException("Gemini API returned status: " + response.getStatusCode());
+                }
+
+                return new String(response.getBody(), StandardCharsets.UTF_8);
+
+            } catch (HttpServerErrorException.ServiceUnavailable e) {
+                lastException = e;
+                log.warn("Gemini API returned 503 (attempt {}/{}). Retrying after delay...", attempt, MAX_RETRIES);
+                if (attempt < MAX_RETRIES) {
+                    try {
+                        Thread.sleep(2000L * attempt); // Exponential backoff: 2s, 4s
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Retry interrupted", ie);
+                    }
+                }
+            } catch (HttpServerErrorException e) {
+                // For other 5xx errors, don't retry
+                log.error("Gemini API server error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+                throw new RuntimeException("Gemini API error: " + e.getMessage(), e);
+            }
+        }
+
+        throw new RuntimeException("Gemini API unavailable after " + MAX_RETRIES + " retries", lastException);
     }
 
     private Map<String, Object> buildGeminiRequest(String base64Image, String mimeType, int topK) {
