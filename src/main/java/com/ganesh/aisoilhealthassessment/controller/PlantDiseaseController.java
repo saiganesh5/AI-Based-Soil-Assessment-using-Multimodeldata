@@ -33,7 +33,7 @@ public class PlantDiseaseController {
     }
 
     @PostMapping("/predict")
-    public ResponseEntity<PredictResponse> predict(
+    public ResponseEntity<?> predict(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "top_k", defaultValue = "5") int topK) {
 
@@ -50,7 +50,10 @@ public class PlantDiseaseController {
 
         } catch (Exception e) {
             log.error("Disease prediction failed: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "error", "Disease prediction failed",
+                    "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
         }
     }
 }
