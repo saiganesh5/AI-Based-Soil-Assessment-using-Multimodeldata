@@ -1,16 +1,11 @@
 package com.ganesh.aisoilhealthassessment.controller;
 
 import com.ganesh.aisoilhealthassessment.dto.PredictResponse;
+import com.ganesh.aisoilhealthassessment.service.GeminiDiseaseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
@@ -18,48 +13,44 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/plant")
 @RequiredArgsConstructor
+@Slf4j
 public class PlantDiseaseController {
 
-    private final RestTemplate restTemplate;
-
-    @org.springframework.beans.factory.annotation.Value("${python.plant.service.url:http://localhost:8000}")
-    private String FASTAPI_URL;
+    private final GeminiDiseaseService geminiDiseaseService;
 
     @GetMapping("/")
     public ResponseEntity<?> getInfo() {
-        return restTemplate.getForEntity(FASTAPI_URL + "/", Map.class);
+        return ResponseEntity.ok(Map.of(
+                "service", "Plant Disease Prediction",
+                "provider", "Gemini Vision AI",
+                "status", "active"
+        ));
     }
 
     @GetMapping("/healthz")
     public ResponseEntity<?> healthCheck() {
-        return restTemplate.getForEntity(FASTAPI_URL + "/healthz", Map.class);
+        return ResponseEntity.ok(Map.of("status", "healthy"));
     }
 
     @PostMapping("/predict")
     public ResponseEntity<PredictResponse> predict(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "top_k", defaultValue = "5") int topK) throws Exception {
+            @RequestParam(value = "top_k", defaultValue = "5") int topK) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        try {
+            log.info("Received disease prediction request - file: {}, size: {} bytes, top_k: {}",
+                    file.getOriginalFilename(), file.getSize(), topK);
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            PredictResponse response = geminiDiseaseService.analyzeImage(file, topK);
 
-        body.add("file", new org.springframework.core.io.ByteArrayResource(file.getBytes()) {
-            @Override
-            public String getFilename() {
-                return file.getOriginalFilename();
-            }
-        });
+            log.info("Prediction complete - top disease: {} (score: {})",
+                    response.getPredicted_label(), response.getPredicted_score());
 
-        HttpEntity<MultiValueMap<String, Object>> requestEntity =
-                new HttpEntity<>(body, headers);
+            return ResponseEntity.ok(response);
 
-        String url = FASTAPI_URL + "/predict?top_k=" + topK;
-
-        ResponseEntity<PredictResponse> response =
-                restTemplate.postForEntity(url, requestEntity, PredictResponse.class);
-
-        return ResponseEntity.ok(response.getBody());
+        } catch (Exception e) {
+            log.error("Disease prediction failed: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
