@@ -45,7 +45,7 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: 3600000
 
-gemini:
-  api:
-    key: ${GEMINI_API_KEY}
-  model: ${GEMINI_MODEL:gemini-2.0-flash}
+python:
+  plant:
+    service:
+      url: ${PYTHON_PLANT_SERVICE_URL:https://web-production-adbfa.up.railway.app}
