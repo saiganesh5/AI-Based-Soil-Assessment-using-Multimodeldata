@@ -14,4 +14,9 @@ public class TestController {
     public String greet(){
         return "Backend is running";
     }
+
+    @GetMapping("/hello")
+    public String hello(){
+        return "Hello Bacjend";
+    }
 }
