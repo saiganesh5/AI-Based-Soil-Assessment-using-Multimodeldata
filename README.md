@@ -4,6 +4,8 @@ An AI-powered smart agriculture platform that helps farmers make better decision
 
 The application can analyze soil conditions, recommend fertilizers, classify soil types, detect plant diseases from images, provide weather information, and answer agriculture-related questions through an AI chatbot.
 
+You can checkout the live link of the project here: [https://soil-health-assessment.vercel.app/]
+
 ---
 
 ## Project Overview
